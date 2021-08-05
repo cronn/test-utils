@@ -1,6 +1,8 @@
 plugins {
     id "java"
 	id "java-library"
+	id "maven-publish"
+	id "signing"
 }
 
 group "de.cronn"
@@ -34,8 +36,71 @@ dependencies {
 	}
 }
 
+java {
+	withSourcesJar()
+	withJavadocJar()
+}
+
 test {
 	useJUnitPlatform()
+}
+
+publishing {
+	publications {
+		mavenJava(MavenPublication) {
+			groupId project.group
+			artifactId project.name
+			version project.version
+			from components.java
+
+			pom {
+				name = project.name
+				description = "Cronn test utils"
+				url = "https://github.com/cronn/test-utils"
+
+				licenses {
+					license {
+						name = "The Apache Software License, Version 2.0"
+						url = "http://www.apache.org/licenses/LICENSE-2.0.txt"
+					}
+				}
+
+				developers {
+					developer {
+						name = "Radosław Postołowicz"
+						email = "radoslaw.postolowicz@cronn.de"
+					}
+				}
+
+				scm {
+					url = "https://github.com/cronn/test-utils"
+				}
+
+				versionMapping {
+					usage('java-api') {
+						fromResolutionOf('runtimeClasspath')
+					}
+					usage('java-runtime') {
+						fromResolutionResult()
+					}
+				}
+			}
+
+		}
+	}
+	repositories {
+		maven {
+			url "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2"
+			credentials {
+				username = project.hasProperty('nexusUsername') ? project.property('nexusUsername') : System.getenv('NEXUS_USERNAME')
+				password = project.hasProperty('nexusPassword') ? project.property('nexusPassword') : System.getenv('NEXUS_PASSWORD')
+			}
+		}
+	}
+}
+
+signing {
+	sign publishing.publications.mavenJava
 }
 
 dependencyLocking {
