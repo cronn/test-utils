@@ -1,0 +1,43 @@
+plugins {
+    id "java"
+	id "java-library"
+}
+
+group "de.cronn"
+version = System.env.ARTIFACT_VERSION ?: "SNAPSHOT"
+
+sourceCompatibility = JavaVersion.VERSION_1_8
+targetCompatibility = JavaVersion.VERSION_1_8
+
+compileJava.options.encoding = 'UTF-8'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    api "org.junit.jupiter:junit-jupiter-api:latest.release"
+	implementation "org.apache.commons:commons-lang3:latest.release"
+	implementation "org.slf4j:slf4j-api:latest.release"
+
+	testImplementation "org.assertj:assertj-core:latest.release"
+	testImplementation "org.mockito:mockito-core:latest.release"
+	testImplementation "org.junit.platform:junit-platform-launcher:latest.release"
+	testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:latest.release"
+	testRuntimeOnly "ch.qos.logback:logback-classic:latest.release"
+
+	// Filter release candidates and beta versions
+	components.all { ComponentMetadataDetails details ->
+		if (details.id.version =~ /(?i).+[-.](CANDIDATE|RC|BETA|ALPHA|M\d+).*/) {
+			details.status = 'milestone'
+		}
+	}
+}
+
+test {
+	useJUnitPlatform()
+}
+
+dependencyLocking {
+	lockAllConfigurations()
+}

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+
+    <appender name="Console" class="ch.qos.logback.core.ConsoleAppender">
+        <layout class="ch.qos.logback.classic.PatternLayout">
+            <Pattern>%date{HH:mm:ss.SSS} %highlight(%-5level) [%blue(%t)] %yellow(%c{40}:%L) - %msg%n%throwable</Pattern>
+        </layout>
+    </appender>
+
+    <root level="INFO">
+        <appender-ref ref="Console"/>
+    </root>
+
+    <logger name="de.cronn" level="DEBUG" additivity="false">
+        <appender-ref ref="Console"/>
+    </logger>
+
+</configuration>
