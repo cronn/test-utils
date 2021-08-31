@@ -5,22 +5,41 @@ plugins {
 	id "signing"
 }
 
-group "de.cronn"
-version = System.env.ARTIFACT_VERSION ?: "SNAPSHOT"
+allprojects {
+	group "de.cronn"
+	version = System.env.ARTIFACT_VERSION ?: "SNAPSHOT"
 
-sourceCompatibility = JavaVersion.VERSION_1_8
-targetCompatibility = JavaVersion.VERSION_1_8
+	sourceCompatibility = JavaVersion.VERSION_1_8
+	targetCompatibility = JavaVersion.VERSION_1_8
 
-compileJava.options.encoding = 'UTF-8'
+	compileJava.options.encoding = 'UTF-8'
 
-repositories {
-    mavenCentral()
+	repositories {
+		mavenCentral()
+	}
+
+}
+
+java {
+	withSourcesJar()
+	withJavadocJar()
+
+	registerFeature("h2Support") {
+		usingSourceSet(sourceSets.main)
+	}
+}
+
+test {
+	useJUnitPlatform()
 }
 
 dependencies {
     api "org.junit.jupiter:junit-jupiter-api:latest.release"
 	implementation "org.apache.commons:commons-lang3:latest.release"
 	implementation "org.slf4j:slf4j-api:latest.release"
+
+	h2SupportImplementation "org.springframework:spring-beans:latest.release"
+	h2SupportImplementation "jakarta.persistence:jakarta.persistence-api:latest.release"
 
 	testImplementation "org.assertj:assertj-core:latest.release"
 	testImplementation "org.mockito:mockito-core:latest.release"
@@ -34,15 +53,6 @@ dependencies {
 			details.status = 'milestone'
 		}
 	}
-}
-
-java {
-	withSourcesJar()
-	withJavadocJar()
-}
-
-test {
-	useJUnitPlatform()
 }
 
 publishing {

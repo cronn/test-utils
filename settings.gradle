@@ -1,2 +1,4 @@
 rootProject.name = 'test-utils'
 
+include ":spring-boot-tests"
+

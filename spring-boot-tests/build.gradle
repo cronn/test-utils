@@ -1,0 +1,15 @@
+plugins {
+	id "java"
+}
+
+test {
+	useJUnitPlatform()
+}
+
+dependencies {
+	implementation platform("org.springframework.boot:spring-boot-dependencies:2.5.4")
+	testImplementation "org.springframework.boot:spring-boot-starter-test"
+	testImplementation "org.springframework.boot:spring-boot-starter-data-jpa"
+	testImplementation project(":")
+	runtimeOnly "com.h2database:h2"
+}

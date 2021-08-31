@@ -15,6 +15,23 @@ Preferred way to use this extension is to [automatically register it for all tes
  - add `junit.jupiter.extensions.autodetection.enabled=true` property (for example to [`junit-platform.properties`](https://junit.org/junit5/docs/current/user-guide/#running-tests-config-params) file)
 
 
+### H2Util
+
+H2Util allows to restore empty state of H2 database in integration tests. Intended usage in `@BeforeEach` callback:
+```java
+@BeforeEach
+void cleanupDatabase(@Autowired H2Util h2Util) {
+        h2Util.resetDatabase();
+}
+```
+
+Empty state is defined as:
+ - empty tables, sequences restarted for `resetDatabase()` 
+ - empty database schema for `dropAllObjects()`
+
+Warning: H2Util requires JPA, Spring and H2 dependencies which are defined as optional in library: you have to provide them on your own.
+
+
 ## Usage
 Add the following Maven dependency to your project:
 
