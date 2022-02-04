@@ -34,6 +34,10 @@ public class H2Util {
 
 	private static final Map<Class<?>, List<TableGenerator>> TABLE_GENERATORS = new LinkedHashMap<>();
 
+	private static final String FLYWAY_TABLE = "flyway_schema_history";
+
+	private static final Set<String> persistentTables = Set.of(FLYWAY_TABLE);
+
 	@Autowired(required = false)
 	private EntityManager entityManager;
 
@@ -174,7 +178,9 @@ public class H2Util {
 		try (ResultSet tables = con.getMetaData().getTables(null, null, null, tableTypes)) {
 			while (tables.next()) {
 				String tableName = tables.getString("TABLE_NAME");
-				tableNames.add(tableName);
+				if (!persistentTables.contains(tableName)) {
+					tableNames.add(tableName);
+				}
 			}
 		}
 		return tableNames;
