@@ -18,6 +18,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import de.cronn.testutils.h2.app.Application;
 import de.cronn.testutils.h2.app.SampleEntity;
 import de.cronn.testutils.h2.app.SampleTableGeneratedEntity;
+import de.cronn.testutils.h2.app.SecondSchemaEntity;
 import de.cronn.testutils.h2.app.TransactionUtil;
 
 @ExtendWith(SoftAssertionsExtension.class)
@@ -54,30 +55,39 @@ public class H2UtilTest {
 			entityManager.persist(new SampleEntity());
 			entityManager.persist(new SampleTableGeneratedEntity());
 			entityManager.persist(new SampleTableGeneratedEntity());
+			entityManager.persist(new SecondSchemaEntity());
 		});
 
-		softly.assertThat(countTables()).isEqualTo(3);
-		softly.assertThat(countRows("sample_entity")).isEqualTo(3);
-		softly.assertThat(countRows("sample_table_generated_entity")).isEqualTo(2);
-		softly.assertThat(countRows("sample_generator")).isEqualTo(1);
-		softly.assertThat(jdbcTemplate.queryForObject("select next_val from sample_generator", Integer.class)).isEqualTo(2);
+		softly.assertThat(countTables()).isEqualTo(5);
+		softly.assertThat(countRows("public.sample_entity")).isEqualTo(3);
+		softly.assertThat(countRows("public.sample_table_generated_entity")).isEqualTo(2);
+		softly.assertThat(countRows("public.sample_generator")).isEqualTo(1);
+		softly.assertThat(countRows("second_schema.second_schema_entity")).isEqualTo(1);
+		softly.assertThat(countRows("second_schema.second_generator")).isEqualTo(1);
+		softly.assertThat(jdbcTemplate.queryForObject("select next_val from public.sample_generator", Integer.class)).isEqualTo(2);
+		softly.assertThat(jdbcTemplate.queryForObject("select next_val from second_schema.second_generator", Integer.class)).isEqualTo(1);
 	}
 
 	@Test
 	void step02_assertDatabaseEmpty() {
-		softly.assertThat(countTables()).isEqualTo(3);
-		softly.assertThat(countRows("sample_entity")).isEqualTo(0);
-		softly.assertThat(countRows("sample_table_generated_entity")).isEqualTo(0);
-		softly.assertThat(countRows("sample_generator")).isEqualTo(1);
-		softly.assertThat(jdbcTemplate.queryForObject("select next_val from sample_generator", Integer.class)).isEqualTo(0);
+		softly.assertThat(countTables()).isEqualTo(5);
+		softly.assertThat(countRows("public.sample_entity")).isEqualTo(0);
+		softly.assertThat(countRows("public.sample_table_generated_entity")).isEqualTo(0);
+		softly.assertThat(countRows("public.sample_generator")).isEqualTo(1);
+		softly.assertThat(countRows("second_schema.second_schema_entity")).isEqualTo(0);
+		softly.assertThat(countRows("second_schema.second_generator")).isEqualTo(1);
+		softly.assertThat(jdbcTemplate.queryForObject("select next_val from public.sample_generator", Integer.class)).isEqualTo(0);
+		softly.assertThat(jdbcTemplate.queryForObject("select next_val from second_schema.second_generator", Integer.class)).isEqualTo(0);
 
 		transactionUtil.doInTransaction(() -> {
 			entityManager.persist(new SampleEntity());
 			entityManager.persist(new SampleTableGeneratedEntity());
+			entityManager.persist(new SecondSchemaEntity());
 		});
 
-		softly.assertThat(jdbcTemplate.queryForObject("select id from sample_entity", Integer.class)).isEqualTo(1);
-		softly.assertThat(jdbcTemplate.queryForObject("select id from sample_table_generated_entity", Integer.class)).isEqualTo(1);
+		softly.assertThat(jdbcTemplate.queryForObject("select id from public.sample_entity", Integer.class)).isEqualTo(1);
+		softly.assertThat(jdbcTemplate.queryForObject("select id from public.sample_table_generated_entity", Integer.class)).isEqualTo(1);
+		softly.assertThat(jdbcTemplate.queryForObject("select id from second_schema.second_schema_entity", Integer.class)).isEqualTo(1);
 	}
 
 	@Test
@@ -91,7 +101,7 @@ public class H2UtilTest {
 	}
 
 	int countTables() {
-		return jdbcTemplate.queryForObject("select count(*) from information_schema.tables where table_schema = 'PUBLIC'", Integer.class);
+		return jdbcTemplate.queryForObject("select count(*) from information_schema.tables where table_type = 'TABLE'", Integer.class);
 	}
 
 }

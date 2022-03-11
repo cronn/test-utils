@@ -42,8 +42,8 @@ public class H2Util {
 
 	public void resetDatabase() {
 		if (dataSource != null) {
-			Set<String> sequenceTableNames = collectSequenceTableNames();
 			try {
+				Set<Table> sequenceTableNames = collectSequenceTableNames();
 				cleanupEmbeddedDatabase(dataSource, sequenceTableNames);
 			} catch (Exception e) {
 				throw new RuntimeException(e);
@@ -61,21 +61,29 @@ public class H2Util {
 		}
 	}
 
-	private Set<String> collectSequenceTableNames() {
+	private Set<Table> collectSequenceTableNames() throws Exception {
 		if (entityManager == null) {
 			return Collections.emptySet();
 		}
-		Set<String> sequenceTableNames = new LinkedHashSet<>();
+		String defaultSchema = getDefaultSchema();
+		Set<Table> sequenceTableNames = new LinkedHashSet<>();
 		for (EntityType<?> entityType : entityManager.getMetamodel().getEntities()) {
 			Class<?> entityJavaType = entityType.getJavaType();
 			for (TableGenerator entry : TABLE_GENERATORS.computeIfAbsent(entityJavaType, H2Util::getTableGeneratorAnnotations)) {
 				if ("".equals(entry.table())) {
 					throw new UnsupportedOperationException("Empty TableGenerator table name is not supported. Please specify table name explicitly");
 				}
-				sequenceTableNames.add(entry.table());
+				String schema = entry.schema();
+				sequenceTableNames.add(new Table(entry.table(), schema == null || schema.isEmpty() ? defaultSchema : schema));
 			}
 		}
 		return sequenceTableNames;
+	}
+
+	private String getDefaultSchema() throws SQLException {
+		try (Connection connection = dataSource.getConnection()) {
+			return connection.getSchema();
+		}
 	}
 
 	private static List<TableGenerator> getTableGeneratorAnnotations(Class<?> type) {
@@ -98,7 +106,7 @@ public class H2Util {
 		}
 	}
 
-	private static void cleanupEmbeddedDatabase(DataSource dataSource, Set<String> sequenceTableNames) throws Exception {
+	private static void cleanupEmbeddedDatabase(DataSource dataSource, Set<Table> sequenceTableNames) throws Exception {
 		try (Connection connection = dataSource.getConnection()) {
 			assertIsH2Database(connection);
 			truncateAllTables(connection, sequenceTableNames);
@@ -132,20 +140,21 @@ public class H2Util {
 		executeStatement(connection, "DROP ALL OBJECTS");
 	}
 
-	private static void truncateAllTables(Connection connection, Set<String> sequencesTableNames) throws Exception {
+	private static void truncateAllTables(Connection connection, Set<Table> sequencesTableNames) throws Exception {
 		executeStatement(connection, "SET REFERENTIAL_INTEGRITY FALSE");
 
 		Set<String> lowerCaseSequencesTableNames = collectInLowerCase(sequencesTableNames);
-		Set<String> tableNames = getTableNames(connection);
-		for (String tableName : tableNames) {
-			long count = selectCount(connection, tableName);
+		Set<Table> tableNames = getTableNames(connection);
+		for (Table table : tableNames) {
+			long count = selectCount(connection, table);
 			if (count > 0) {
-				if (lowerCaseSequencesTableNames.contains(tableName.toLowerCase())) {
-					log.warn("resetting {} sequences in table '{}'", count, tableName);
-					executeStatement(connection, "UPDATE " + tableName + " SET next_val = 0");
+				String tableIdentifierSql = table.toSql();
+				if (lowerCaseSequencesTableNames.contains(tableIdentifierSql.toLowerCase())) {
+					log.warn("resetting {} sequences in table '{}'", count, tableIdentifierSql);
+					executeStatement(connection, "UPDATE " + tableIdentifierSql + " SET next_val = 0");
 				} else {
-					log.warn("deleting {} rows from table '{}'", count, tableName);
-					executeStatement(connection, "TRUNCATE TABLE " + tableName);
+					log.warn("deleting {} rows from table '{}'", count, tableIdentifierSql);
+					executeStatement(connection, "TRUNCATE TABLE " + tableIdentifierSql);
 				}
 			}
 		}
@@ -153,14 +162,15 @@ public class H2Util {
 		executeStatement(connection, "SET REFERENTIAL_INTEGRITY TRUE");
 	}
 
-	private static Set<String> collectInLowerCase(Set<String> sequencesTableNames) {
+	private static Set<String> collectInLowerCase(Set<Table> sequencesTableNames) {
 		return sequencesTableNames.stream()
+			.map(Table::toSql)
 			.map(String::toLowerCase)
 			.collect(Collectors.toCollection(LinkedHashSet::new));
 	}
 
-	private static long selectCount(Connection connection, String tableName) throws SQLException {
-		try (PreparedStatement statement = connection.prepareStatement("SELECT COUNT(*) FROM " + tableName)) {
+	private static long selectCount(Connection connection, Table table) throws SQLException {
+		try (PreparedStatement statement = connection.prepareStatement("SELECT COUNT(*) FROM " + table.toSql())) {
 			try (ResultSet resultSet = statement.executeQuery()) {
 				Assert.isTrue(resultSet.next());
 				return resultSet.getLong(1);
@@ -168,13 +178,14 @@ public class H2Util {
 		}
 	}
 
-	public static Set<String> getTableNames(Connection con) throws SQLException {
+	public static Set<Table> getTableNames(Connection con) throws SQLException {
 		String[] tableTypes = { "TABLE" };
-		Set<String> tableNames = new LinkedHashSet<>();
+		Set<Table> tableNames = new LinkedHashSet<>();
 		try (ResultSet tables = con.getMetaData().getTables(null, null, null, tableTypes)) {
 			while (tables.next()) {
+				String schema = tables.getString("TABLE_SCHEM");
 				String tableName = tables.getString("TABLE_NAME");
-				tableNames.add(tableName);
+				tableNames.add(new Table(tableName, schema));
 			}
 		}
 		return tableNames;
@@ -188,6 +199,28 @@ public class H2Util {
 	private static void executeStatement(Connection connection, String sql) throws Exception {
 		try (PreparedStatement stmt = connection.prepareStatement(sql)) {
 			stmt.execute();
+		}
+	}
+
+	public static class Table {
+		private final String name;
+		private final String schema;
+
+		public Table(String name, String schema) {
+			this.name = name;
+			this.schema = schema;
+		}
+
+		public String getName() {
+			return name;
+		}
+
+		public String getSchema() {
+			return schema;
+		}
+
+		public String toSql() {
+			return schema + "." + name;
 		}
 	}
 
