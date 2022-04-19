@@ -18,6 +18,18 @@ allprojects {
 		mavenCentral()
 	}
 
+	dependencies {
+		// Filter release candidates and beta versions
+		components.all { ComponentMetadataDetails details ->
+			if (details.id.version =~ /(?i).+[-.](CANDIDATE|RC|BETA|ALPHA|M\d+).*/) {
+				details.status = 'milestone'
+			}
+		}
+	}
+
+	dependencyLocking {
+		lockAllConfigurations()
+	}
 }
 
 java {
@@ -47,13 +59,6 @@ dependencies {
 	testImplementation "org.junit.platform:junit-platform-launcher:latest.release"
 	testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:latest.release"
 	testRuntimeOnly "ch.qos.logback:logback-classic:latest.release"
-
-	// Filter release candidates and beta versions
-	components.all { ComponentMetadataDetails details ->
-		if (details.id.version =~ /(?i).+[-.](CANDIDATE|RC|BETA|ALPHA|M\d+).*/) {
-			details.status = 'milestone'
-		}
-	}
 }
 
 publishing {
@@ -112,8 +117,4 @@ publishing {
 
 signing {
 	sign publishing.publications.mavenJava
-}
-
-dependencyLocking {
-	lockAllConfigurations()
 }

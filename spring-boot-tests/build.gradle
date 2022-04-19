@@ -7,7 +7,7 @@ test {
 }
 
 dependencies {
-	implementation platform("org.springframework.boot:spring-boot-dependencies:2.5.4")
+	implementation platform("org.springframework.boot:spring-boot-dependencies:latest.release")
 	testImplementation "org.springframework.boot:spring-boot-starter-test"
 	testImplementation "org.springframework.boot:spring-boot-starter-data-jpa"
 	testImplementation project(":")
