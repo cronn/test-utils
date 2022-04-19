@@ -39,7 +39,8 @@ dependencies {
 	implementation "org.slf4j:slf4j-api:latest.release"
 
 	h2SupportImplementation "org.springframework:spring-beans:latest.release"
-	h2SupportImplementation "jakarta.persistence:jakarta.persistence-api:latest.release"
+	// Restrict Jakarta Persistence API to 2.x. With 3.x we need to change the packages to jakarta.persistence
+	h2SupportImplementation "jakarta.persistence:jakarta.persistence-api:[2.2,3.0)"
 
 	testImplementation "org.assertj:assertj-core:latest.release"
 	testImplementation "org.mockito:mockito-core:latest.release"
