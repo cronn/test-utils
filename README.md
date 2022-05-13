@@ -35,6 +35,9 @@ Warning: H2Util requires JPA, Spring and H2 dependencies which are defined as op
 ### TestClock
 TestClock is an implementation of the abstract class `Clock`, and provides features useful for testing. If not specified it is initialized with a fixed Instant in the past. Its time is fixed, this clock will not run. Therefore, it also provides features to manipulate its time.
 
+### ConcurrentTest
+ConcurrentTest offers support for tests which need to run on mutliple threads. It handles the overhead of submitting and evaluating each of a given number of a `task`. It uses the `ExecutorServiceUtils` to ensure that the `executorService` is properly shut down and the `task queue` is cleared, so that subsequent tests can run without interference.
+
 ## Usage
 Add the following Maven dependency to your project:
 
