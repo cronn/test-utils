@@ -32,6 +32,8 @@ Empty state is defined as:
 
 Warning: H2Util requires JPA, Spring and H2 dependencies which are defined as optional in library: you have to provide them on your own.
 
+### TestClock
+TestClock is an implementation of the abstract class `Clock`, and provides features useful for testing. If not specified it is initialized with a fixed Instant in the past. Its time is fixed, this clock will not run. Therefore, it also provides features to manipulate its time.
 
 ## Usage
 Add the following Maven dependency to your project:
