@@ -134,7 +134,7 @@ public class TestClock extends Clock {
 		long daysToWindBackward = ChronoUnit.DAYS.between(targetDate, oldDate);
 		if (daysToWindBackward < 0) {
 			Instant targetInstant = instant().minus(Duration.ofDays(daysToWindBackward));
-			throw new IllegalArgumentException(String.format("Cannot wind clock(now={%s}) *backward* to date in the future({%s})", instant(), targetInstant));
+			throw new IllegalArgumentException(String.format("Cannot wind clock(now=%s) *backward* to date in the future(%s)", instant(), targetInstant));
 		} else if (daysToWindBackward > 0) {
 			windBackDays(daysToWindBackward);
 		} else {

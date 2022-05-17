@@ -1,5 +1,7 @@
 package de.cronn.testutils;
 
+import static org.assertj.core.api.Assertions.*;
+
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -7,8 +9,6 @@ import java.time.Month;
 import java.time.ZoneId;
 
 import org.junit.jupiter.api.Test;
-
-import static org.assertj.core.api.Assertions.*;
 
 class TestClockTest {
 
@@ -144,7 +144,7 @@ class TestClockTest {
 
 		LocalDate targetDate = LocalDate.parse("2020-01-01");
 		assertThatThrownBy(() -> testClock.windBackToDate(targetDate))
-			.isInstanceOf(IllegalArgumentException.class).hasMessage("Cannot wind clock(now={2016-01-01T00:00:00.123456Z}) *backward* to date in the future({2020-01-01T00:00:00.123456Z})");
+			.isInstanceOf(IllegalArgumentException.class).hasMessage("Cannot wind clock(now=2016-01-01T00:00:00.123456Z) *backward* to date in the future(2020-01-01T00:00:00.123456Z)");
 	}
 
 	@Test
@@ -160,9 +160,7 @@ class TestClockTest {
 	void shouldFailWindBackNegativeDuration() {
 		TestClock testClock = TestClock.defaultUtc();
 		Duration duration = Duration.ofSeconds(-10);
-		assertThatThrownBy(() -> {
-			testClock.windBack(duration);
-		})
+		assertThatThrownBy(() -> testClock.windBack(duration))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessage("Cannot wind clock *backward* by a negative duration: PT-10S");
 	}
