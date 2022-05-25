@@ -76,7 +76,7 @@ public class ConcurrentTest<T> {
 	@FunctionalInterface
 	public interface IndexedCallable<T> {
 
-		T call(int index) throws InterruptedException;
+		T call(int index) throws Exception;
 
 		default Callable<T> toCallable(int index) {
 			return () -> call(index);
