@@ -45,7 +45,7 @@ Add the following Maven dependency to your project:
 <dependency>
     <groupId>de.cronn</groupId>
     <artifactId>test-utils</artifactId>
-    <version>0.3.0</version>
+    <version>0.4.0</version>
     <scope>test</scope>
 </dependency>
 ```
