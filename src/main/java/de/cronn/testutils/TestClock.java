@@ -143,6 +143,10 @@ public class TestClock extends Clock {
 		}
 	}
 
+	public static TestClock defaultBerlin() {
+		return new TestClock(DEFAULT_TEST_INSTANT, ZoneId.of("Europe/Berlin"));
+	}
+
 	public static TestClock defaultUtc() {
 		return new TestClock(DEFAULT_TEST_INSTANT, ZoneOffset.UTC);
 	}
