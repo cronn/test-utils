@@ -15,6 +15,9 @@ Preferred way to use this extension is to [automatically register it for all tes
  - add `META-INF/services/org.junit.jupiter.api.extension.Extension` file containing `de.cronn.testutils.JUnit5MisusageCheck`
  - add `junit.jupiter.extensions.autodetection.enabled=true` property (for example to [`junit-platform.properties`](https://junit.org/junit5/docs/current/user-guide/#running-tests-config-params) file)
 
+### TestInfoExtension
+
+The same as `TestInfo` but as extension which you can register as test class field.
 
 ### H2Util
 
