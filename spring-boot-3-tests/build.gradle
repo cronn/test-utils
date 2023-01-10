@@ -2,14 +2,25 @@ plugins {
 	id "java"
 }
 
+java {
+	toolchain {
+		languageVersion = JavaLanguageVersion.of(17)
+	}
+}
+
 test {
 	useJUnitPlatform()
 }
 
 dependencies {
-	implementation platform("org.springframework.boot:spring-boot-dependencies:(,3.0)")
+	implementation platform("org.springframework.boot:spring-boot-dependencies:3.0.1")
 	testImplementation "org.springframework.boot:spring-boot-starter-test"
 	testImplementation "org.springframework.boot:spring-boot-starter-data-jpa"
 	testImplementation project(":")
-	runtimeOnly "com.h2database:h2"
+	runtimeOnly("com.h2database:h2") {
+		version {
+			strictly("1.+")
+		}
+	}
+
 }
