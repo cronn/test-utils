@@ -3,6 +3,7 @@ plugins {
 	id "java-library"
 	id "maven-publish"
 	id "signing"
+	id "io.spring.dependency-management" version "1.1.0"
 }
 
 allprojects {
@@ -16,19 +17,6 @@ allprojects {
 
 	repositories {
 		mavenCentral()
-	}
-
-	dependencies {
-		// Filter release candidates and beta versions
-		components.all { ComponentMetadataDetails details ->
-			if (details.id.version =~ /(?i).+[-.](CANDIDATE|RC|BETA|ALPHA|M\d+).*/) {
-				details.status = 'milestone'
-			}
-		}
-	}
-
-	dependencyLocking {
-		lockAllConfigurations()
 	}
 }
 
@@ -48,23 +36,31 @@ test {
 	useJUnitPlatform()
 }
 
+dependencyManagement {
+	imports {
+		mavenBom "org.springframework.boot:spring-boot-dependencies:2.6.14"
+	}
+	generatedPomCustomization {
+		enabled = false
+	}
+}
+
 dependencies {
-    api "org.junit.jupiter:junit-jupiter-api:latest.release"
-	implementation "org.apache.commons:commons-lang3:latest.release"
-	implementation "org.slf4j:slf4j-api:latest.release"
+    api "org.junit.jupiter:junit-jupiter-api"
+	implementation "org.apache.commons:commons-lang3"
+	implementation "org.slf4j:slf4j-api"
 
-	h2SupportImplementation "org.springframework:spring-beans:latest.release"
-	// Restrict Jakarta Persistence API to 2.x. With 3.x we need to change the packages to jakarta.persistence
-	h2SupportImplementation "jakarta.persistence:jakarta.persistence-api:[2.2,3.0)"
+	h2SupportImplementation "org.springframework:spring-beans"
+	h2SupportImplementation "jakarta.persistence:jakarta.persistence-api"
 
-	springSupportImplementation "org.springframework:spring-context:latest.release"
-	springSupportImplementation "org.springframework:spring-test:latest.release"
+	springSupportImplementation "org.springframework:spring-context"
+	springSupportImplementation "org.springframework:spring-test"
 
-	testImplementation "org.assertj:assertj-core:latest.release"
-	testImplementation "org.mockito:mockito-core:latest.release"
-	testImplementation "org.junit.platform:junit-platform-launcher:latest.release"
-	testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine:latest.release"
-	testRuntimeOnly "ch.qos.logback:logback-classic:latest.release"
+	testImplementation "org.assertj:assertj-core"
+	testImplementation "org.mockito:mockito-core"
+	testImplementation "org.junit.platform:junit-platform-launcher"
+	testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine"
+	testRuntimeOnly "ch.qos.logback:logback-classic"
 }
 
 publishing {
