@@ -1,4 +1,8 @@
 rootProject.name = 'test-utils'
 
 include ":spring-boot-tests"
+include ":spring-boot-tests:h2"
+include ":spring-boot-tests:h2:tests-h2-1.4.x"
+include ":spring-boot-tests:h2:tests-h2-2.0.x"
+include ":spring-boot-tests:h2:tests-h2-2.1.x"
 

@@ -1,5 +1,4 @@
 plugins {
-    id "java"
 	id "java-library"
 	id "maven-publish"
 	id "signing"
@@ -7,6 +6,7 @@ plugins {
 }
 
 allprojects {
+	apply plugin: "java"
 	group "de.cronn"
 	version = System.env.ARTIFACT_VERSION ?: "SNAPSHOT"
 
@@ -17,6 +17,10 @@ allprojects {
 
 	repositories {
 		mavenCentral()
+	}
+
+	test {
+		useJUnitPlatform()
 	}
 }
 

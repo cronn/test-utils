@@ -123,7 +123,7 @@ public class H2Util {
 
 	private static void resetAllSequences(Connection connection) throws Exception {
 		List<String> sequenceNames = new ArrayList<>();
-		try (PreparedStatement stmt = connection.prepareStatement("SELECT SEQUENCE_NAME FROM INFORMATION_SCHEMA.SEQUENCES WHERE CURRENT_VALUE > 0")) {
+		try (PreparedStatement stmt = connection.prepareStatement("SELECT SEQUENCE_NAME FROM INFORMATION_SCHEMA.SEQUENCES")) {
 			try (ResultSet resultSet = stmt.executeQuery()) {
 				while (resultSet.next()) {
 					String sequenceName = resultSet.getString("SEQUENCE_NAME");
@@ -150,15 +150,14 @@ public class H2Util {
 			if (count > 0) {
 				String tableIdentifierSql = table.toSql();
 				if (lowerCaseSequencesTableNames.contains(tableIdentifierSql.toLowerCase())) {
-					log.warn("resetting {} sequences in table '{}'", count, tableIdentifierSql);
+					log.info("resetting {} sequences in table '{}'", count, tableIdentifierSql);
 					executeStatement(connection, "UPDATE " + tableIdentifierSql + " SET next_val = 0");
 				} else {
-					log.warn("deleting {} rows from table '{}'", count, tableIdentifierSql);
-					executeStatement(connection, "TRUNCATE TABLE " + tableIdentifierSql);
+					log.info("deleting {} rows from table '{}'", count, tableIdentifierSql);
+					executeStatement(connection, "TRUNCATE TABLE " + tableIdentifierSql + " RESTART IDENTITY");
 				}
 			}
 		}
-
 		executeStatement(connection, "SET REFERENTIAL_INTEGRITY TRUE");
 	}
 
@@ -179,11 +178,13 @@ public class H2Util {
 	}
 
 	public static Set<Table> getTableNames(Connection con) throws SQLException {
-		String[] tableTypes = { "TABLE" };
 		Set<Table> tableNames = new LinkedHashSet<>();
-		try (ResultSet tables = con.getMetaData().getTables(null, null, null, tableTypes)) {
+		String selectAllTables = "SELECT * FROM INFORMATION_SCHEMA.TABLES " +
+			"WHERE TABLE_TYPE IN ('TABLE' /* h2 v1.4 */, 'BASE TABLE' /* h2 v2.x */) " +
+			"AND TABLE_SCHEMA <> 'INFORMATION_SCHEMA'";
+		try (PreparedStatement stmt = con.prepareStatement(selectAllTables); ResultSet tables = stmt.executeQuery()) {
 			while (tables.next()) {
-				String schema = tables.getString("TABLE_SCHEM");
+				String schema = tables.getString("TABLE_SCHEMA");
 				String tableName = tables.getString("TABLE_NAME");
 				tableNames.add(new Table(tableName, schema));
 			}

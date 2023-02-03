@@ -19,6 +19,7 @@ import de.cronn.testutils.h2.app.Application;
 import de.cronn.testutils.h2.app.SampleEntity;
 import de.cronn.testutils.h2.app.SampleTableGeneratedEntity;
 import de.cronn.testutils.h2.app.SecondSchemaEntity;
+import de.cronn.testutils.h2.app.SequenceUsingEntity;
 import de.cronn.testutils.h2.app.TransactionUtil;
 
 @ExtendWith(SoftAssertionsExtension.class)
@@ -53,13 +54,15 @@ public class H2UtilTest {
 			entityManager.persist(new SampleEntity());
 			entityManager.persist(new SampleEntity());
 			entityManager.persist(new SampleEntity());
+			entityManager.persist(new SequenceUsingEntity());
 			entityManager.persist(new SampleTableGeneratedEntity());
 			entityManager.persist(new SampleTableGeneratedEntity());
 			entityManager.persist(new SecondSchemaEntity());
 		});
 
-		softly.assertThat(countTables()).isEqualTo(5);
+		softly.assertThat(countTables()).isEqualTo(6);
 		softly.assertThat(countRows("public.sample_entity")).isEqualTo(3);
+		softly.assertThat(countRows("public.sequence_using_entity")).isEqualTo(1);
 		softly.assertThat(countRows("public.sample_table_generated_entity")).isEqualTo(2);
 		softly.assertThat(countRows("public.sample_generator")).isEqualTo(1);
 		softly.assertThat(countRows("second_schema.second_schema_entity")).isEqualTo(1);
@@ -70,8 +73,9 @@ public class H2UtilTest {
 
 	@Test
 	void step02_assertDatabaseEmpty() {
-		softly.assertThat(countTables()).isEqualTo(5);
+		softly.assertThat(countTables()).isEqualTo(6);
 		softly.assertThat(countRows("public.sample_entity")).isEqualTo(0);
+		softly.assertThat(countRows("public.sequence_using_entity")).isEqualTo(0);
 		softly.assertThat(countRows("public.sample_table_generated_entity")).isEqualTo(0);
 		softly.assertThat(countRows("public.sample_generator")).isEqualTo(1);
 		softly.assertThat(countRows("second_schema.second_schema_entity")).isEqualTo(0);
@@ -81,11 +85,13 @@ public class H2UtilTest {
 
 		transactionUtil.doInTransaction(() -> {
 			entityManager.persist(new SampleEntity());
+			entityManager.persist(new SequenceUsingEntity());
 			entityManager.persist(new SampleTableGeneratedEntity());
 			entityManager.persist(new SecondSchemaEntity());
 		});
 
 		softly.assertThat(jdbcTemplate.queryForObject("select id from public.sample_entity", Integer.class)).isEqualTo(1);
+		softly.assertThat(jdbcTemplate.queryForObject("select id from public.sequence_using_entity", Integer.class)).isEqualTo(1);
 		softly.assertThat(jdbcTemplate.queryForObject("select id from public.sample_table_generated_entity", Integer.class)).isEqualTo(1);
 		softly.assertThat(jdbcTemplate.queryForObject("select id from second_schema.second_schema_entity", Integer.class)).isEqualTo(1);
 	}
@@ -101,7 +107,7 @@ public class H2UtilTest {
 	}
 
 	int countTables() {
-		return jdbcTemplate.queryForObject("select count(*) from information_schema.tables where table_type = 'TABLE'", Integer.class);
+		return jdbcTemplate.queryForObject("select count(*) from information_schema.tables where table_type in ('TABLE', 'BASE TABLE') and table_schema <> 'INFORMATION_SCHEMA'", Integer.class);
 	}
 
 }
