@@ -16,6 +16,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import de.cronn.testutils.h2.app.Application;
+import de.cronn.testutils.h2.app.EntityWithIdentityId;
 import de.cronn.testutils.h2.app.SampleEntity;
 import de.cronn.testutils.h2.app.SampleTableGeneratedEntity;
 import de.cronn.testutils.h2.app.SecondSchemaEntity;
@@ -58,13 +59,15 @@ public class H2UtilTest {
 			entityManager.persist(new SampleTableGeneratedEntity());
 			entityManager.persist(new SampleTableGeneratedEntity());
 			entityManager.persist(new SecondSchemaEntity());
+			entityManager.persist(new EntityWithIdentityId());
 		});
 
-		softly.assertThat(countTables()).isEqualTo(6);
+		softly.assertThat(countTables()).isEqualTo(7);
 		softly.assertThat(countRows("public.sample_entity")).isEqualTo(3);
 		softly.assertThat(countRows("public.sequence_using_entity")).isEqualTo(1);
 		softly.assertThat(countRows("public.sample_table_generated_entity")).isEqualTo(2);
 		softly.assertThat(countRows("public.sample_generator")).isEqualTo(1);
+		softly.assertThat(countRows("public.entity_with_identity_id")).isEqualTo(1);
 		softly.assertThat(countRows("second_schema.second_schema_entity")).isEqualTo(1);
 		softly.assertThat(countRows("second_schema.second_generator")).isEqualTo(1);
 		softly.assertThat(jdbcTemplate.queryForObject("select next_val from public.sample_generator", Integer.class)).isEqualTo(2);
@@ -73,11 +76,12 @@ public class H2UtilTest {
 
 	@Test
 	void step02_assertDatabaseEmpty() {
-		softly.assertThat(countTables()).isEqualTo(6);
+		softly.assertThat(countTables()).isEqualTo(7);
 		softly.assertThat(countRows("public.sample_entity")).isEqualTo(0);
 		softly.assertThat(countRows("public.sequence_using_entity")).isEqualTo(0);
 		softly.assertThat(countRows("public.sample_table_generated_entity")).isEqualTo(0);
 		softly.assertThat(countRows("public.sample_generator")).isEqualTo(1);
+		softly.assertThat(countRows("public.entity_with_identity_id")).isEqualTo(0);
 		softly.assertThat(countRows("second_schema.second_schema_entity")).isEqualTo(0);
 		softly.assertThat(countRows("second_schema.second_generator")).isEqualTo(1);
 		softly.assertThat(jdbcTemplate.queryForObject("select next_val from public.sample_generator", Integer.class)).isEqualTo(0);
@@ -87,17 +91,41 @@ public class H2UtilTest {
 			entityManager.persist(new SampleEntity());
 			entityManager.persist(new SequenceUsingEntity());
 			entityManager.persist(new SampleTableGeneratedEntity());
+			entityManager.persist(new EntityWithIdentityId());
 			entityManager.persist(new SecondSchemaEntity());
 		});
 
 		softly.assertThat(jdbcTemplate.queryForObject("select id from public.sample_entity", Integer.class)).isEqualTo(1);
 		softly.assertThat(jdbcTemplate.queryForObject("select id from public.sequence_using_entity", Integer.class)).isEqualTo(1);
 		softly.assertThat(jdbcTemplate.queryForObject("select id from public.sample_table_generated_entity", Integer.class)).isEqualTo(1);
+		softly.assertThat(jdbcTemplate.queryForObject("select id from public.entity_with_identity_id", Integer.class)).isEqualTo(1);
 		softly.assertThat(jdbcTemplate.queryForObject("select id from second_schema.second_schema_entity", Integer.class)).isEqualTo(1);
 	}
 
 	@Test
-	void step03_testDrop() {
+	void step03_assertIdentityColumnGotResetEvenIfTableIsEmpty() {
+		transactionUtil.doInTransaction(() -> {
+			EntityWithIdentityId entityWithIdentityId = new EntityWithIdentityId();
+			entityManager.persist(entityWithIdentityId);
+			softly.assertThat(entityWithIdentityId.getId()).isEqualTo(1);
+		});
+
+		transactionUtil.doInTransaction(() -> {
+			EntityWithIdentityId entityWithIdentityId = entityManager.find(EntityWithIdentityId.class, 1);
+			entityManager.remove(entityWithIdentityId);
+		});
+
+		h2Util.resetDatabase();
+
+		transactionUtil.doInTransaction(() -> {
+			EntityWithIdentityId entityWithIdentityId = new EntityWithIdentityId();
+			entityManager.persist(entityWithIdentityId);
+			softly.assertThat(entityWithIdentityId.getId()).isEqualTo(1);
+		});
+	}
+
+	@Test
+	void step04_testDrop() {
 		h2Util.dropAllObjects();
 		softly.assertThat(countTables()).isEqualTo(0);
 	}

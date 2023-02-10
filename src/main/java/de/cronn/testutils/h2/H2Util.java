@@ -12,6 +12,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -90,8 +91,8 @@ public class H2Util {
 		Set<Field> fields = new LinkedHashSet<>();
 		collectFields(type, fields);
 		return fields.stream()
-			.filter(f -> f.isAnnotationPresent(TableGenerator.class))
-			.map(f -> f.getAnnotation(TableGenerator.class))
+			.filter(field -> field.isAnnotationPresent(TableGenerator.class))
+			.map(field -> field.getAnnotation(TableGenerator.class))
 			.collect(Collectors.toList());
 	}
 
@@ -147,15 +148,17 @@ public class H2Util {
 		Set<Table> tableNames = getTableNames(connection);
 		for (Table table : tableNames) {
 			long count = selectCount(connection, table);
-			if (count > 0) {
-				String tableIdentifierSql = table.toSql();
-				if (lowerCaseSequencesTableNames.contains(tableIdentifierSql.toLowerCase())) {
-					log.info("resetting {} sequences in table '{}'", count, tableIdentifierSql);
-					executeStatement(connection, "UPDATE " + tableIdentifierSql + " SET next_val = 0");
-				} else {
-					log.info("deleting {} rows from table '{}'", count, tableIdentifierSql);
-					executeStatement(connection, "TRUNCATE TABLE " + tableIdentifierSql + " RESTART IDENTITY");
+			String tableIdentifierSql = table.toSql();
+			if (lowerCaseSequencesTableNames.contains(tableIdentifierSql.toLowerCase(Locale.ROOT))) {
+				if (count > 0) {
+					log.debug("Resetting {} sequence{} in table '{}'", count, count == 1 ? "" : "s", tableIdentifierSql);
 				}
+				executeStatement(connection, "UPDATE " + tableIdentifierSql + " SET next_val = 0");
+			} else {
+				if (count > 0) {
+					log.debug("Deleting {} row{} from table '{}'", count, count == 1 ? "" : "s", tableIdentifierSql);
+				}
+				executeStatement(connection, "TRUNCATE TABLE " + tableIdentifierSql + " RESTART IDENTITY");
 			}
 		}
 		executeStatement(connection, "SET REFERENTIAL_INTEGRITY TRUE");
@@ -164,14 +167,14 @@ public class H2Util {
 	private static Set<String> collectInLowerCase(Set<Table> sequencesTableNames) {
 		return sequencesTableNames.stream()
 			.map(Table::toSql)
-			.map(String::toLowerCase)
+			.map(qualifiedTableName -> qualifiedTableName.toLowerCase(Locale.ROOT))
 			.collect(Collectors.toCollection(LinkedHashSet::new));
 	}
 
 	private static long selectCount(Connection connection, Table table) throws SQLException {
 		try (PreparedStatement statement = connection.prepareStatement("SELECT COUNT(*) FROM " + table.toSql())) {
 			try (ResultSet resultSet = statement.executeQuery()) {
-				Assert.isTrue(resultSet.next());
+				Assert.isTrue(resultSet.next(), "Expected exactly one result");
 				return resultSet.getLong(1);
 			}
 		}
@@ -194,7 +197,7 @@ public class H2Util {
 
 	private static void assertIsH2Database(Connection connection) throws SQLException {
 		String driverName = connection.getMetaData().getDriverName();
-		Assert.state(H2_JDBC_DRIVER.equals(driverName), "Unexpected driver: " + driverName);
+		Assert.isTrue(H2_JDBC_DRIVER.equals(driverName), () -> "Unexpected driver: " + driverName);
 	}
 
 	private static void executeStatement(Connection connection, String sql) throws Exception {
