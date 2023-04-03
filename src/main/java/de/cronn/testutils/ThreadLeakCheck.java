@@ -67,6 +67,7 @@ public class ThreadLeakCheck implements BeforeAllCallback, AfterAllCallback {
 			threadsAfterTest.values().removeIf(threadNameStartsWithAny(allowedThreadNamePrefixes));
 			threadsAfterTest.values().removeIf(this::checkIfThreadTerminatesAfterGracePeriod);
 			threadsAfterTest.values().removeIf(this::isAddressChangeListenerThread);
+			threadsAfterTest.values().removeIf(this::isIocpEventHandlerTask);
 
 			if (!threadsAfterTest.isEmpty()) {
 				throw new ThreadLeakException("Potential thread leak detected. Running threads after test that did not exist before: " +
@@ -102,11 +103,25 @@ public class ThreadLeakCheck implements BeforeAllCallback, AfterAllCallback {
 	private boolean isAddressChangeListenerThread(Thread thread) {
 		if (SystemUtils.IS_OS_WINDOWS && thread.getName().startsWith("Thread-")) {
 			// See https://github.com/openjdk/jdk/blob/3b350ad87f182c2800ba17458911de877ae24a6d/src/java.base/windows/classes/sun/net/dns/ResolverConfigurationImpl.java#L198
-			return Arrays.stream(thread.getStackTrace())
-				.anyMatch(stackTraceElement -> "sun.net.dns.ResolverConfigurationImpl$AddressChangeListener".equals(stackTraceElement.getClassName()));
+			// Note: It was fixed in JDK 19 via https://github.com/openjdk/jdk/commit/81d7eafd913d28e0c83ddb29f9436b207da5f21c
+			return stackTraceContainsClassName(thread, "sun.net.dns.ResolverConfigurationImpl$AddressChangeListener");
 		} else {
 			return false;
 		}
+	}
+
+	private boolean isIocpEventHandlerTask(Thread thread) {
+		if (SystemUtils.IS_OS_WINDOWS && thread.getName().startsWith("Thread-")) {
+			// The JDK on Windows starts unnamed threads in https://github.com/openjdk/jdk/blob/0deb648985b018653ccdaf193dc13b3cf21c088a/src/java.base/windows/classes/sun/nio/ch/Iocp.java#L75
+			return stackTraceContainsClassName(thread, "sun.nio.ch.Iocp$EventHandlerTask");
+		} else {
+			return false;
+		}
+	}
+
+	private static boolean stackTraceContainsClassName(Thread thread, String className) {
+		return Arrays.stream(thread.getStackTrace())
+			.anyMatch(stackTraceElement -> className.equals(stackTraceElement.getClassName()));
 	}
 
 	private static Map<Long, Thread> getAllLivingThreadNamesById() {
