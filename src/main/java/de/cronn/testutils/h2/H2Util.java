@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import javax.persistence.EntityManager;
@@ -41,11 +42,14 @@ public class H2Util {
 	@Autowired(required = false)
 	private DataSource dataSource;
 
-	public void resetDatabase() {
+	/**
+	 * @param tablesToExclude Example when using Liquibase: Pattern.compile("^public\\.databasechangelog.*", Pattern.CASE_INSENSITIVE)
+	 */
+	public void resetDatabase(Pattern... tablesToExclude) {
 		if (dataSource != null) {
 			try {
 				Set<Table> sequenceTableNames = collectSequenceTableNames();
-				cleanupEmbeddedDatabase(dataSource, sequenceTableNames);
+				cleanupEmbeddedDatabase(dataSource, Arrays.asList(tablesToExclude), sequenceTableNames);
 			} catch (Exception e) {
 				throw new RuntimeException(e);
 			}
@@ -107,10 +111,11 @@ public class H2Util {
 		}
 	}
 
-	private static void cleanupEmbeddedDatabase(DataSource dataSource, Set<Table> sequenceTableNames) throws Exception {
+	private static void cleanupEmbeddedDatabase(DataSource dataSource, Collection<Pattern> tablesToExclude,
+												Set<Table> sequenceTableNames) throws Exception {
 		try (Connection connection = dataSource.getConnection()) {
 			assertIsH2Database(connection);
-			truncateAllTables(connection, sequenceTableNames);
+			truncateAllTables(connection, sequenceTableNames, tablesToExclude);
 			resetAllSequences(connection);
 		}
 	}
@@ -141,7 +146,8 @@ public class H2Util {
 		executeStatement(connection, "DROP ALL OBJECTS");
 	}
 
-	private static void truncateAllTables(Connection connection, Set<Table> sequencesTableNames) throws Exception {
+	private static void truncateAllTables(Connection connection, Set<Table> sequencesTableNames,
+										  Collection<Pattern> tablesToExclude) throws Exception {
 		executeStatement(connection, "SET REFERENTIAL_INTEGRITY FALSE");
 
 		Set<String> lowerCaseSequencesTableNames = collectInLowerCase(sequencesTableNames);
@@ -149,6 +155,10 @@ public class H2Util {
 		for (Table table : tableNames) {
 			long count = selectCount(connection, table);
 			String tableIdentifierSql = table.toSql();
+			if (tablesToExclude.stream().anyMatch(pattern -> pattern.matcher(tableIdentifierSql).matches())) {
+				log.trace("Excluding '{}' from reset", tableIdentifierSql);
+				continue;
+			}
 			if (lowerCaseSequencesTableNames.contains(tableIdentifierSql.toLowerCase(Locale.ROOT))) {
 				if (count > 0) {
 					log.debug("Resetting {} sequence{} in table '{}'", count, count == 1 ? "" : "s", tableIdentifierSql);

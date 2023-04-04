@@ -1,5 +1,7 @@
 package de.cronn.testutils.h2;
 
+import java.util.regex.Pattern;
+
 import javax.persistence.EntityManager;
 
 import org.assertj.core.api.SoftAssertions;
@@ -125,7 +127,20 @@ public class H2UtilTest {
 	}
 
 	@Test
-	void step04_testDrop() {
+	void step04_assertExclusionOfTablesDuringReset() throws Exception {
+		transactionUtil.doInTransaction(() -> {
+			entityManager.persist(new SampleEntity());
+			entityManager.persist(new EntityWithIdentityId());
+		});
+
+		h2Util.resetDatabase(Pattern.compile("^public\\.sample.*", Pattern.CASE_INSENSITIVE));
+
+		softly.assertThat(countRows("public.sample_entity")).isEqualTo(1);
+		softly.assertThat(countRows("public.entity_with_identity_id")).isEqualTo(0);
+	}
+
+	@Test
+	void step05_testDrop() {
 		h2Util.dropAllObjects();
 		softly.assertThat(countTables()).isEqualTo(0);
 	}
