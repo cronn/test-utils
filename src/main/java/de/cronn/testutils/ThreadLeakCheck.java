@@ -11,6 +11,7 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -125,8 +126,10 @@ public class ThreadLeakCheck implements BeforeAllCallback, AfterAllCallback {
 	}
 
 	private static Map<Long, Thread> getAllLivingThreadNamesById() {
-		return ThreadUtils.findThreads(Thread::isAlive)
+		return ThreadUtils.getAllThreads()
 			.stream()
+			.filter(Objects::nonNull)
+			.filter(Thread::isAlive)
 			.sorted(Comparator.comparingLong(Thread::getId))
 			.collect(Collectors.toMap(Thread::getId, thread -> thread, (t, t2) -> { throw new IllegalStateException(); }, LinkedHashMap::new ));
 	}

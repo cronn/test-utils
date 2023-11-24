@@ -5,6 +5,7 @@ import static de.cronn.testutils.ThreadLeakCheckTest.*;
 import static org.assertj.core.api.Assertions.*;
 
 import java.util.List;
+import java.util.function.Predicate;
 
 import org.apache.commons.lang3.ThreadUtils;
 import org.junit.jupiter.api.AfterEach;
@@ -87,10 +88,12 @@ class ThreadLeakCheckTest {
 			);
 	}
 
-	private void joinThreads(ThreadUtils.ThreadPredicate criteria) throws InterruptedException {
-		for (Thread thread : ThreadUtils.findThreads(criteria)) {
-			thread.interrupt();
-			thread.join(10_000L);
+	private void joinThreads(Predicate<Thread> criteria) throws InterruptedException {
+		for (Thread thread : ThreadUtils.getAllThreads()) {
+			if (thread != null && criteria.test(thread)) {
+				thread.interrupt();
+				thread.join(10_000L);
+			}
 		}
 	}
 
