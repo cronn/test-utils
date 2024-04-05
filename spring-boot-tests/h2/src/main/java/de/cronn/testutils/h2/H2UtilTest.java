@@ -150,7 +150,7 @@ public class H2UtilTest {
 	}
 
 	int countTables() {
-		return jdbcTemplate.queryForObject("select count(*) from information_schema.tables where table_type in ('TABLE', 'BASE TABLE') and table_schema <> 'INFORMATION_SCHEMA'", Integer.class);
+		return jdbcTemplate.queryForObject("select count(*) from information_schema.tables where table_type in ('TABLE', 'BASE TABLE') and table_schema not in ('INFORMATION_SCHEMA', 'PG_CATALOG')", Integer.class);
 	}
 
 }

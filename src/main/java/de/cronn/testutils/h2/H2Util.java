@@ -194,7 +194,7 @@ public class H2Util {
 		Set<Table> tableNames = new LinkedHashSet<>();
 		String selectAllTables = "SELECT * FROM INFORMATION_SCHEMA.TABLES " +
 			"WHERE TABLE_TYPE IN ('TABLE' /* h2 v1.4 */, 'BASE TABLE' /* h2 v2.x */) " +
-			"AND TABLE_SCHEMA <> 'INFORMATION_SCHEMA'";
+			"AND TABLE_SCHEMA NOT IN ('INFORMATION_SCHEMA', 'PG_CATALOG')";
 		try (PreparedStatement stmt = con.prepareStatement(selectAllTables); ResultSet tables = stmt.executeQuery()) {
 			while (tables.next()) {
 				String schema = tables.getString("TABLE_SCHEMA");
