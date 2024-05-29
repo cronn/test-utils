@@ -18,15 +18,16 @@ import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
-import javax.persistence.EntityManager;
-import javax.persistence.TableGenerator;
-import javax.persistence.metamodel.EntityType;
 import javax.sql.DataSource;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.Assert;
+
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.TableGenerator;
+import jakarta.persistence.metamodel.EntityType;
 
 public class H2Util {
 

@@ -2,8 +2,6 @@ package de.cronn.testutils.h2;
 
 import java.util.regex.Pattern;
 
-import javax.persistence.EntityManager;
-
 import org.assertj.core.api.SoftAssertions;
 import org.assertj.core.api.junit.jupiter.InjectSoftAssertions;
 import org.assertj.core.api.junit.jupiter.SoftAssertionsExtension;
@@ -24,6 +22,7 @@ import de.cronn.testutils.h2.app.SampleTableGeneratedEntity;
 import de.cronn.testutils.h2.app.SecondSchemaEntity;
 import de.cronn.testutils.h2.app.SequenceUsingEntity;
 import de.cronn.testutils.h2.app.TransactionUtil;
+import jakarta.persistence.EntityManager;
 
 @ExtendWith(SoftAssertionsExtension.class)
 @TestMethodOrder(MethodOrderer.MethodName.class)

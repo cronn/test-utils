@@ -1,6 +1,6 @@
 package de.cronn.testutils.h2.app;
 
-import javax.transaction.Transactional;
+import jakarta.transaction.Transactional;
 
 public class TransactionUtil {
 

@@ -10,8 +10,8 @@ allprojects {
 	group "de.cronn"
 	version = System.env.ARTIFACT_VERSION ?: "SNAPSHOT"
 
-	sourceCompatibility = JavaVersion.VERSION_1_8
-	targetCompatibility = JavaVersion.VERSION_1_8
+	sourceCompatibility = JavaVersion.VERSION_17
+	targetCompatibility = JavaVersion.VERSION_17
 
 	compileJava.options.encoding = 'UTF-8'
 
@@ -42,7 +42,7 @@ test {
 
 dependencyManagement {
 	imports {
-		mavenBom "org.springframework.boot:spring-boot-dependencies:2.6.14"
+		mavenBom "org.springframework.boot:spring-boot-dependencies:3.2.6"
 	}
 	generatedPomCustomization {
 		enabled = false

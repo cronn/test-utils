@@ -33,7 +33,9 @@ Empty state is defined as:
  - empty tables, sequences restarted for `resetDatabase()` 
  - empty database schema for `dropAllObjects()`
 
-Warning: H2Util requires JPA, Spring and H2 dependencies which are defined as optional in library: you have to provide them on your own.
+Warnings:
+ - H2Util requires JPA, Spring and H2 dependencies which are defined as optional in library: you have to provide them on your own.
+ - Hibernate can cache sequence values in advance. You might want to disable that by setting [`hibernate.id.optimizer.pooled.preferred`](https://docs.jboss.org/hibernate/orm/6.5/userguide/html_single/Hibernate_User_Guide.html#settings-mapping) to `NONE` (for example by adding `spring.jpa.properties.hibernate.id.optimizer.pooled.preferred=NONE` spring property)
 
 ### TestClock
 TestClock is an implementation of the abstract class `Clock`, and provides features useful for testing. If not specified it is initialized with a fixed Instant in the past. Its time is fixed, this clock will not run. Therefore, it also provides features to manipulate its time.
