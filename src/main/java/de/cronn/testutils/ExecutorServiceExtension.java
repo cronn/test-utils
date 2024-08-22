@@ -1,5 +1,6 @@
 package de.cronn.testutils;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -15,17 +16,21 @@ import org.springframework.scheduling.concurrent.CustomizableThreadFactory;
 
 public class ExecutorServiceExtension implements BeforeEachCallback, AfterEachCallback {
 
-	private final long testTimeoutMillis;
+	private final Duration testTimeout;
 	private ExecutorService executorService;
 	private List<Future<?>> futures;
 
 	public ExecutorServiceExtension(long testTimeoutMillis) {
-		this.testTimeoutMillis = testTimeoutMillis;
+		this(Duration.ofMillis(testTimeoutMillis));
+	}
+
+	public ExecutorServiceExtension(Duration testTimeout) {
+		this.testTimeout = testTimeout;
 	}
 
 	@Override
 	public void afterEach(ExtensionContext context) {
-		ExecutorServiceUtils.shutdownOrThrow(executorService, getTestName(context), testTimeoutMillis);
+		ExecutorServiceUtils.shutdownOrThrow(executorService, getTestName(context), testTimeout);
 	}
 
 	@Override

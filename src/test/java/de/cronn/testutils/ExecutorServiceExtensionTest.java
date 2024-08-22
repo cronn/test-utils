@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.Future;
 
@@ -13,7 +14,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class ExecutorServiceExtensionTest {
 
     @RegisterExtension
-    ExecutorServiceExtension executorServiceExtension = new ExecutorServiceExtension(10_000);
+    ExecutorServiceExtension executorServiceExtension = new ExecutorServiceExtension(Duration.ofSeconds(10));
 
     @Test
     void testHappyCase() throws Exception {
