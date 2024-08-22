@@ -62,7 +62,7 @@ public class ExecutorServiceExtension implements BeforeEachCallback, AfterEachCa
 		}
 	}
 
-	class TestNameUtils {
+	static class TestNameUtils {
 
 		private TestNameUtils() {
 		}
