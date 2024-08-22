@@ -1,5 +1,6 @@
 package de.cronn.testutils;
 
+import java.time.Duration;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -16,11 +17,15 @@ public final class ExecutorServiceUtils {
 	private ExecutorServiceUtils() {
 	}
 
-	public static void shutdownOrThrow(ExecutorService executor, String executorServiceName, long timeoutMs) {
+	public static void shutdownOrThrow(ExecutorService executor, String executorServiceName, long timeoutMillis) {
+		shutdownOrThrow(executor, executorServiceName, Duration.ofMillis(timeoutMillis));
+	}
+
+	public static void shutdownOrThrow(ExecutorService executor, String executorServiceName, Duration timeout) {
 		if (executor != null) {
 			try {
-				if (!shutdownGracefully(executor, executorServiceName, timeoutMs)) {
-					boolean success = shutdownNow(executor, executorServiceName, timeoutMs);
+				if (!shutdownGracefully(executor, executorServiceName, timeout)) {
+					boolean success = shutdownNow(executor, executorServiceName, timeout);
 					Assertions.assertTrue(success, String.format("Failed to shutdown %s", executorServiceName));
 				}
 			} catch (InterruptedException e) {
@@ -31,11 +36,23 @@ public final class ExecutorServiceUtils {
 	}
 
 	public static boolean shutdownNow(ExecutorService executorService, String executorServiceName, long timeoutMillis) throws InterruptedException {
-		return shutdown(executorService, executorServiceName, timeoutMillis, true);
+		return shutdownNow(executorService, executorServiceName, Duration.ofMillis(timeoutMillis));
+	}
+
+	public static boolean shutdownNow(ExecutorService executorService, String executorServiceName, Duration timeout) throws InterruptedException {
+		return shutdown(executorService, executorServiceName, timeout, true);
 	}
 
 	public static boolean shutdownGracefully(ExecutorService executorService, String executorServiceName, long timeoutMillis) throws InterruptedException {
-		return shutdown(executorService, executorServiceName, timeoutMillis, false);
+		return shutdownGracefully(executorService, executorServiceName, Duration.ofMillis(timeoutMillis));
+	}
+
+	public static boolean shutdownGracefully(ExecutorService executorService, String executorServiceName, Duration timeout) throws InterruptedException {
+		return shutdown(executorService, executorServiceName, timeout, false);
+	}
+
+	private static boolean shutdown(ExecutorService executorService, String executorServiceName, Duration timeout, boolean shutdownWithInterrupt) throws InterruptedException {
+		return shutdown(executorService, executorServiceName, timeout.toMillis(), shutdownWithInterrupt);
 	}
 
 	private static boolean shutdown(ExecutorService executorService, String executorServiceName, long timeoutMillis, boolean shutdownWithInterrupt) throws InterruptedException {
