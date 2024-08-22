@@ -70,8 +70,7 @@ public final class ExecutorServiceUtils {
 		if (success) {
 			log.info("Finished shutdown of '{}'", executorServiceName);
 		} else {
-			if (executorService instanceof ThreadPoolExecutor) {
-				ThreadPoolExecutor threadPoolExecutor = (ThreadPoolExecutor) executorService;
+			if (executorService instanceof ThreadPoolExecutor threadPoolExecutor) {
 				log.warn("Shutdown of '{}' timed out after {} ms. Active tasks: {}", executorServiceName, timeoutMillis, threadPoolExecutor.getActiveCount());
 			} else {
 				log.warn("Shutdown of '{}' timed out after {} ms.", executorServiceName, timeoutMillis);
@@ -81,8 +80,7 @@ public final class ExecutorServiceUtils {
 	}
 
 	private static void clearQueue(ExecutorService executorService, String executorServiceName) {
-		if (executorService instanceof ThreadPoolExecutor) {
-			ThreadPoolExecutor threadPoolExecutor = (ThreadPoolExecutor) executorService;
+		if (executorService instanceof ThreadPoolExecutor threadPoolExecutor) {
 			BlockingQueue<Runnable> queue = threadPoolExecutor.getQueue();
 			if (!queue.isEmpty()) {
 				int queueSize = queue.size();

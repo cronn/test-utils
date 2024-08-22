@@ -45,8 +45,8 @@ public class ResetClockExtension implements AfterAllCallback, AfterEachCallback 
 	protected void resetClock(ExtensionContext context) {
 		ApplicationContext applicationContext = SpringExtension.getApplicationContext(context);
 		Clock clock = applicationContext.getBean(Clock.class);
-		if (clock instanceof TestClock) {
-			((TestClock) clock).reset();
+		if (clock instanceof TestClock testClock) {
+			testClock.reset();
 		}
 	}
 
