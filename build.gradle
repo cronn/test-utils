@@ -11,11 +11,13 @@ ext {
 
 allprojects {
 	apply plugin: "java"
-	group "de.cronn"
+	group = "de.cronn"
 	version = System.env.ARTIFACT_VERSION ?: "SNAPSHOT"
 
-	sourceCompatibility = JavaVersion.VERSION_17
-	targetCompatibility = JavaVersion.VERSION_17
+	java {
+		sourceCompatibility = JavaVersion.VERSION_17
+		targetCompatibility = JavaVersion.VERSION_17
+	}
 
 	compileJava.options.encoding = 'UTF-8'
 
@@ -74,9 +76,9 @@ dependencies {
 publishing {
 	publications {
 		mavenJava(MavenPublication) {
-			groupId project.group
-			artifactId project.name
-			version project.version
+			groupId = project.group
+			artifactId = project.name
+			version = project.version
 			from components.java
 
 			pom {
@@ -116,7 +118,7 @@ publishing {
 	}
 	repositories {
 		maven {
-			url "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2"
+			url = "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2"
 			credentials {
 				username = project.hasProperty('nexusUsername') ? project.property('nexusUsername') : System.getenv('NEXUS_USERNAME')
 				password = project.hasProperty('nexusPassword') ? project.property('nexusPassword') : System.getenv('NEXUS_PASSWORD')
