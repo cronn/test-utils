@@ -1,8 +1,0 @@
-dependencies {
-	implementation project(":spring-boot-tests:h2")
-	runtimeOnly("com.h2database:h2") {
-		version {
-			strictly "1.4.200"
-		}
-	}
-}
