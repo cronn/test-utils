@@ -3,8 +3,9 @@ plugins {
 }
 
 dependencies {
-	api platform("org.springframework.boot:spring-boot-dependencies:3.2.6")
+	api platform("org.springframework.boot:spring-boot-dependencies:${rootProject.ext.springBootVersion}")
 	api "org.springframework.boot:spring-boot-starter-test"
 	api "org.springframework.boot:spring-boot-starter-data-jpa"
+	runtimeOnly "org.junit.platform:junit-platform-launcher"
 	implementation project(":")
 }
