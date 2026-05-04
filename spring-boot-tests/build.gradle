@@ -1,5 +1,6 @@
 dependencies {
-	implementation platform("org.springframework.boot:spring-boot-dependencies:3.2.6")
+	implementation platform("org.springframework.boot:spring-boot-dependencies:${rootProject.ext.springBootVersion}")
 	testImplementation "org.springframework.boot:spring-boot-starter-test"
 	testImplementation project(":")
+	testRuntimeOnly "org.junit.platform:junit-platform-launcher"
 }
