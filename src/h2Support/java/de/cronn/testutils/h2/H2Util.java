@@ -22,7 +22,6 @@ import javax.sql.DataSource;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.util.Assert;
 
 import jakarta.persistence.EntityManager;
@@ -37,33 +36,31 @@ public class H2Util {
 
 	private static final Map<Class<?>, List<TableGenerator>> TABLE_GENERATORS = new LinkedHashMap<>();
 
-	@Autowired(required = false)
-	private EntityManager entityManager;
+	private final EntityManager entityManager;
+	private final DataSource dataSource;
 
-	@Autowired(required = false)
-	private DataSource dataSource;
+	public H2Util(EntityManager entityManager, DataSource dataSource) {
+		this.dataSource = dataSource;
+		this.entityManager = entityManager;
+	}
 
 	/**
 	 * @param tablesToExclude Example when using Liquibase: Pattern.compile("^public\\.databasechangelog.*", Pattern.CASE_INSENSITIVE)
 	 */
 	public void resetDatabase(Pattern... tablesToExclude) {
-		if (dataSource != null) {
-			try {
-				Set<Table> sequenceTableNames = collectSequenceTableNames();
-				cleanupEmbeddedDatabase(dataSource, Arrays.asList(tablesToExclude), sequenceTableNames);
-			} catch (Exception e) {
-				throw new RuntimeException(e);
-			}
+		try {
+			Set<Table> sequenceTableNames = collectSequenceTableNames();
+			cleanupEmbeddedDatabase(dataSource, Arrays.asList(tablesToExclude), sequenceTableNames);
+		} catch (Exception e) {
+			throw new RuntimeException(e);
 		}
 	}
 
 	public void dropAllObjects() {
-		if (dataSource != null) {
-			try {
-				dropAllObjects(dataSource);
-			} catch (Exception e) {
-				throw new RuntimeException(e);
-			}
+		try {
+			dropAllObjects(dataSource);
+		} catch (Exception e) {
+			throw new RuntimeException(e);
 		}
 	}
 
