@@ -1,0 +1,21 @@
+| METHOD | PATH | ALLOWED_ROLES |
+| --- | --- | --- |
+| GET | /admin | ADMIN |
+| POST | /admin | ADMIN |
+| DELETE | /any-method | ADMIN |
+| GET | /any-method | ADMIN |
+| HEAD | /any-method | ADMIN |
+| OPTIONS | /any-method | ADMIN |
+| PATCH | /any-method | ADMIN |
+| POST | /any-method | ADMIN |
+| PUT | /any-method | ADMIN |
+| GET | /authenticated | {ANY_ROLE} |
+| GET | /guest-only | GUEST |
+| DELETE | /items/{id} | ADMIN |
+| GET | /items/{id} | ADMIN |
+| GET | /locked |  |
+| GET | /not-found | USER |
+| GET | /public | {UNAUTHENTICATED}<br>{ANY_ROLE} |
+| GET | /server-error | USER |
+| GET | /teapot | USER |
+| GET | /user | ADMIN<br>USER |

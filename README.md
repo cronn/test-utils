@@ -318,7 +318,7 @@ class OrderServiceTest implements QueryValidationTraits {
 }
 ```
 
-On the first run the validation file is generated automatically and contains the full SQL of every captured query including its bound parameters. On subsequent runs the output is compared against it, so any change in query structure, table access, or parameter values will fail the test. See the [validation-file-assertions](https://github.com/cronn/validation-file-assertions) documentation for details on file locations and how to update validation files.
+On the first run the validation file is generated automatically and contains the full SQL of every captured query including its bound parameters. On subsequent runs the output is compared against it, so any change in query structure, table access, or parameter values will fail the test. See the [validation-file-assertions] documentation for details on file locations and how to update validation files.
 
 By default, byte array parameters are masked with `[MASKED-BYTE-ARRAY]` via `ByteArrayReplacer`. Override `defaultValidationNormalizerForQueryCaptor()` in your test class to supply a different normalizer, or pass one explicitly:
 
@@ -350,3 +350,68 @@ Maven:
     <classifier>jpa-query-capturing-support</classifier>
 </dependency>
 ```
+
+### 🛡️ Authorization Test Support [INCUBATING]
+
+> **INCUBATING** — API and output format may change in a backwards-incompatible way in any release.
+
+AuthorizationTestUtil generates an authorization matrix for a running Spring MVC application as a Markdown table.
+This is useful for asserting that each endpoint is reachable by exactly the roles you expect.
+We recommend to assert the authorization matrix using our [validation-file-assertions] library.
+
+For every endpoint registered in the application's `RequestMappingHandlerMapping`,
+the AuthorizationTestUtil issues one HTTP request per provided role (plus one anonymous request)
+and records which requests were *not* rejected with `401`/`403`/`405`.
+Endpoints accessible to every provided role render as `{ANY_ROLE}`;
+anonymously accessible endpoints render as `{UNAUTHENTICATED}`.
+
+
+```java
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+class MyAuthorizationTest implements JUnit5ValidationFileAssertions {
+
+    @LocalServerPort int port;
+    @Autowired RequestMappingHandlerMapping handlerMapping;
+
+    @Test
+    void authorizationMatrix() {
+        List<RoleAndToken> roles = List.of(
+            new RoleAndToken("ADMIN", adminToken),
+            new RoleAndToken("USER",  userToken));
+        String markdown = AuthorizationTestUtil.buildAuthorizationMatrix(
+            port, handlerMapping, roles, List.of("/ignored-endpoint-prefix"));
+        assertWithFile(markdown, FileExtensions.MD);
+    }
+}
+```
+
+Gradle:
+```groovy
+testImplementation("de.cronn:test-utils:{version}") {
+    capabilities {
+        requireCapability("de.cronn:test-utils-authorization-test")
+    }
+}
+```
+
+Maven:
+```xml
+<dependency>
+    <groupId>de.cronn</groupId>
+    <artifactId>test-utils</artifactId>
+    <version>{version}</version>
+    <scope>test</scope>
+    <classifier>authorization-test</classifier>
+</dependency>
+```
+
+> [!WARNING]
+> This feature only supports Spring MVC with bearer-token authentication — WebFlux, form login, session cookies, basic auth, mTLS etc. are not supported.
+> 
+> Be aware of the following additional constraints:
+> - Path variables are replaced with a fixed placeholder:
+>   - Endpoints whose authorization depends on the variable's *value* (e.g. `@PreAuthorize("#id == authentication.principal.userId")`) may produce incorrect results. 
+>   - Regex-constrained variables (e.g. `/users/{id:[0-9]+}`) are rejected outright.
+> - No `Accept` header is sent. For applications that vary authorization by media type, only the endpoint matching an absent `Accept` header will be tested.
+
+[validation-file-assertions]: https://github.com/cronn/validation-file-assertions
