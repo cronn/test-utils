@@ -32,6 +32,7 @@ allprojects {
 
 sourceSets {
 	h2Support {}
+	postgresSupport {}
 }
 
 java {
@@ -40,6 +41,9 @@ java {
 
 	registerFeature("h2Support") {
 		usingSourceSet(sourceSets.h2Support)
+	}
+	registerFeature("postgresSupport") {
+		usingSourceSet(sourceSets.postgresSupport)
 	}
 	registerFeature("springSupport") {
 		usingSourceSet(sourceSets.main)
@@ -68,6 +72,10 @@ dependencies {
 	h2SupportImplementation "org.springframework:spring-beans"
 	h2SupportImplementation "jakarta.persistence:jakarta.persistence-api"
 	h2SupportImplementation "org.springframework.boot:spring-boot-autoconfigure"
+
+	postgresSupportImplementation "org.springframework.boot:spring-boot-autoconfigure"
+	postgresSupportImplementation "org.springframework:spring-jdbc"
+	postgresSupportImplementation "org.springframework:spring-tx"
 
 	springSupportImplementation "org.springframework:spring-context"
 	springSupportImplementation "org.springframework:spring-test"

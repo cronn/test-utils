@@ -137,6 +137,45 @@ Maven:
 </dependency>
 ```
 
+### 🐘 Postgres support
+
+`PostgresUtil` brings a PostgreSQL database back to a clean state between tests. It is designed for use in Spring Boot integration tests and is automatically registered as a Spring bean via auto-configuration.
+
+Typical usage in a `@BeforeEach` callback:
+
+```java
+@BeforeEach
+void cleanupDatabase(@Autowired PostgresUtil postgresUtil) throws SQLException {
+    postgresUtil.truncateAllTables();
+    postgresUtil.resetAllSequences();
+}
+```
+
+`truncateAllTables()` truncates all tables in the `public` schema (excluding Liquibase changelog tables) with `RESTART IDENTITY CASCADE`. Tables can be excluded by name. `resetAllSequences()` resets all sequences with a non-null `last_value` back to 1 and also resets Hibernate's internal sequence generator state to stay in sync.
+
+> [!NOTE]
+> `resetAllSequences()` accesses internal Hibernate APIs to reset cached sequence state. Test thoroughly after Hibernate upgrades.
+
+Gradle:
+```groovy
+testImplementation("de.cronn:test-utils:{version}") {
+    capabilities {
+        requireCapability("de.cronn:test-utils-postgres-support")
+    }
+}
+```
+
+Maven:
+```xml
+<dependency>
+    <groupId>de.cronn</groupId>
+    <artifactId>test-utils</artifactId>
+    <version>{version}</version>
+    <scope>test</scope>
+    <classifier>postgres-support</classifier>
+</dependency>
+```
+
 ### 🌱 Spring support
 
 `ResetClockExtension` is a convenient JUnit 5 extension for Spring-based integration tests: it automatically resets a `TestClock` bean found in the test `ApplicationContext` before each test.

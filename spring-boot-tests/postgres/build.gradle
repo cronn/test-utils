@@ -1,0 +1,21 @@
+plugins {
+	id "java"
+}
+
+dependencies {
+	implementation platform("org.springframework.boot:spring-boot-dependencies:${rootProject.ext.springBootVersion}")
+	implementation "org.springframework.boot:spring-boot-starter-data-jpa"
+
+	testImplementation "org.springframework.boot:spring-boot-starter-test"
+	testImplementation "org.springframework.boot:spring-boot-testcontainers"
+	testImplementation "org.testcontainers:postgresql"
+	testImplementation "org.testcontainers:junit-jupiter"
+	testRuntimeOnly "org.postgresql:postgresql"
+	testRuntimeOnly "org.junit.platform:junit-platform-launcher"
+
+	testImplementation(project(":")) {
+		capabilities {
+			requireCapability("de.cronn:test-utils-postgres-support")
+		}
+	}
+}
