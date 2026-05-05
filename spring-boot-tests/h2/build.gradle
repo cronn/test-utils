@@ -7,5 +7,9 @@ dependencies {
 	api "org.springframework.boot:spring-boot-starter-test"
 	api "org.springframework.boot:spring-boot-starter-data-jpa"
 	runtimeOnly "org.junit.platform:junit-platform-launcher"
-	implementation project(":")
+	implementation(project(":")) {
+		capabilities {
+			requireCapability("de.cronn:test-utils-h2-support")
+		}
+	}
 }

@@ -12,7 +12,6 @@ import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import de.cronn.testutils.h2.app.Application;
@@ -27,7 +26,6 @@ import jakarta.persistence.EntityManager;
 @ExtendWith(SoftAssertionsExtension.class)
 @TestMethodOrder(MethodOrderer.MethodName.class)
 @SpringBootTest(classes = Application.class)
-@Import(H2Util.class)
 public class H2UtilTest {
 
 	@Autowired
