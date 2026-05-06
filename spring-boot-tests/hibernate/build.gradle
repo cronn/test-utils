@@ -7,15 +7,12 @@ dependencies {
 	implementation "org.springframework.boot:spring-boot-starter-data-jpa"
 
 	testImplementation "org.springframework.boot:spring-boot-starter-test"
-	testImplementation "org.springframework.boot:spring-boot-testcontainers"
-	testImplementation "org.testcontainers:postgresql"
-	testImplementation "org.testcontainers:junit-jupiter"
-	testRuntimeOnly "org.postgresql:postgresql"
 	testRuntimeOnly "org.junit.platform:junit-platform-launcher"
+	testRuntimeOnly "com.h2database:h2"
 
 	testImplementation(project(":")) {
 		capabilities {
-			requireCapability("de.cronn:test-utils-postgres-support")
+			requireCapability("de.cronn:test-utils-h2-support")
 		}
 	}
 	testImplementation(project(":")) {
