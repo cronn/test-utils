@@ -34,6 +34,7 @@ sourceSets {
 	h2Support {}
 	postgresSupport {}
 	hibernateSupport {}
+	springSupport {}
 }
 
 java {
@@ -47,7 +48,7 @@ java {
 		usingSourceSet(sourceSets.postgresSupport)
 	}
 	registerFeature("springSupport") {
-		usingSourceSet(sourceSets.main)
+		usingSourceSet(sourceSets.springSupport)
 	}
 	registerFeature("hibernateSupport") {
 		usingSourceSet(sourceSets.hibernateSupport)
@@ -86,6 +87,8 @@ dependencies {
 	hibernateSupportImplementation "org.hibernate.orm:hibernate-core"
 	hibernateSupportImplementation "de.cronn:reflection-util:2.19.1"
 
+	springSupportApi project(':')
+	springSupportImplementation "org.junit.jupiter:junit-jupiter-api"
 	springSupportImplementation "org.springframework:spring-context"
 	springSupportImplementation "org.springframework:spring-test"
 
@@ -94,6 +97,7 @@ dependencies {
 	testImplementation "org.junit.platform:junit-platform-launcher"
 	testRuntimeOnly "org.junit.jupiter:junit-jupiter-engine"
 	testRuntimeOnly "ch.qos.logback:logback-classic"
+	testRuntimeOnly "org.springframework:spring-context"
 }
 
 publishing {

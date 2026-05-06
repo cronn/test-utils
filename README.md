@@ -230,7 +230,15 @@ Maven:
 
 ### 🌱 Spring support
 
-`ResetClockExtension` is a convenient JUnit 5 extension for Spring-based integration tests: it automatically resets a `TestClock` bean found in the test `ApplicationContext` before each test.
+`ResetClockExtension` is a convenient JUnit 5 extension for Spring-based integration tests: it automatically resets a `TestClock` bean found in the test `ApplicationContext` after each test.
+
+The extension can be registered [automatically for all tests](https://junit.org/junit5/docs/current/user-guide/#extensions-registration-automatic) by adding the following to your [`junit-platform.properties`](https://junit.org/junit5/docs/current/user-guide/#running-tests-config-params):
+
+```properties
+junit.jupiter.extensions.autodetection.enabled=true
+```
+
+The spring-support JAR already ships the necessary `META-INF/services` entry. No `@ExtendWith` annotation is needed.
 
 Gradle:
 ```groovy

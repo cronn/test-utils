@@ -8,11 +8,11 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
-import org.springframework.scheduling.concurrent.CustomizableThreadFactory;
 
 public class ExecutorServiceExtension implements BeforeEachCallback, AfterEachCallback {
 
@@ -35,7 +35,8 @@ public class ExecutorServiceExtension implements BeforeEachCallback, AfterEachCa
 
 	@Override
 	public void beforeEach(ExtensionContext context) {
-		ThreadFactory threadFactory = new CustomizableThreadFactory(getTestName(context));
+		String testName = getTestName(context);
+		ThreadFactory threadFactory = new PrefixedThreadFactory(testName);
 		executorService = Executors.newCachedThreadPool(threadFactory);
 		futures = new ArrayList<>();
 	}
@@ -91,4 +92,17 @@ public class ExecutorServiceExtension implements BeforeEachCallback, AfterEachCa
 		}
 	}
 
+	private static class PrefixedThreadFactory implements ThreadFactory {
+		private final AtomicInteger counter = new AtomicInteger();
+		private final String threadNamePrefix;
+
+		public PrefixedThreadFactory(String threadNamePrefix) {
+			this.threadNamePrefix = threadNamePrefix;
+		}
+
+		@Override
+		public Thread newThread(Runnable runnable) {
+			return new Thread(runnable, this.threadNamePrefix + "-" + counter.incrementAndGet());
+		}
+	}
 }
