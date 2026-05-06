@@ -1,5 +1,9 @@
 package de.cronn.testutils.spring;
 
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 
@@ -24,7 +28,6 @@ class ResetClockExtensionTest {
 	private TestClock clock;
 
 	@TestMethodOrder(MethodOrderer.MethodName.class)
-	@ExtendWith(ResetClockExtension.class)
 	@Nested
 	class DefinedTestMethodOrder {
 
@@ -44,7 +47,6 @@ class ResetClockExtensionTest {
 		}
 	}
 
-	@ExtendWith(ResetClockExtension.class)
 	@Nested
 	class NoTestMethodOrder {
 
@@ -66,10 +68,14 @@ class ResetClockExtensionTest {
 	@Nested
 	class CustomResetCondition {
 
+		@Target(ElementType.METHOD)
+		@Retention(RetentionPolicy.RUNTIME)
+		@interface ResetClockAfterTest {}
+
 		@RegisterExtension
 		private ResetClockExtension resetClockExtension = new ResetClockExtension(
 			extensionContext -> extensionContext.getTestMethod()
-				.map(method -> method.getName().endsWith("ResetClock"))
+				.map(method -> method.isAnnotationPresent(ResetClockAfterTest.class))
 				.orElse(false)
 		);
 
@@ -89,6 +95,7 @@ class ResetClockExtensionTest {
 		}
 
 		@Test
+		@ResetClockAfterTest
 		void d_windClockForwardAndResetClock() {
 			clock.windForwardHours(3L);
 		}

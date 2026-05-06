@@ -1,7 +1,7 @@
 package de.cronn.testutils.spring;
 
 import java.time.Clock;
-import java.util.function.Function;
+import java.util.function.Predicate;
 
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.TestMethodOrder;
@@ -15,10 +15,10 @@ import de.cronn.testutils.TestClock;
 
 public class ResetClockExtension implements AfterAllCallback, AfterEachCallback {
 
-	private final Function<ExtensionContext, Boolean> resetAfter;
+	private final Predicate<ExtensionContext> shouldResetAfterEach;
 
-	public ResetClockExtension(Function<ExtensionContext, Boolean> resetAfter) {
-		this.resetAfter = resetAfter;
+	public ResetClockExtension(Predicate<ExtensionContext> shouldResetAfterEach) {
+		this.shouldResetAfterEach = shouldResetAfterEach;
 	}
 
 	public ResetClockExtension() {
@@ -27,7 +27,7 @@ public class ResetClockExtension implements AfterAllCallback, AfterEachCallback 
 
 	@Override
 	public void afterEach(ExtensionContext context) {
-		if (resetAfter.apply(context)) {
+		if (shouldResetAfterEach.test(context)) {
 			resetClock(context);
 		}
 	}
@@ -44,10 +44,11 @@ public class ResetClockExtension implements AfterAllCallback, AfterEachCallback 
 
 	protected void resetClock(ExtensionContext context) {
 		ApplicationContext applicationContext = SpringExtension.getApplicationContext(context);
-		Clock clock = applicationContext.getBean(Clock.class);
-		if (clock instanceof TestClock testClock) {
-			testClock.reset();
-		}
+		applicationContext.getBeanProvider(Clock.class).ifAvailable(clock -> {
+			if (clock instanceof TestClock testClock) {
+				testClock.reset();
+			}
+		});
 	}
 
 }
