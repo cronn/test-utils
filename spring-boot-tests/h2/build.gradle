@@ -12,4 +12,9 @@ dependencies {
 			requireCapability("de.cronn:test-utils-h2-support")
 		}
 	}
+	implementation(project(":")) {
+		capabilities {
+			requireCapability("de.cronn:test-utils-hibernate-support")
+		}
+	}
 }

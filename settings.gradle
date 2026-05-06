@@ -8,4 +8,5 @@ include ":spring-boot-tests:h2:tests-h2-2.2.x"
 include ":spring-boot-tests:h2:tests-h2-2.3.x"
 include ":spring-boot-tests:h2:tests-h2-2.4.x"
 
+include ":spring-boot-tests:hibernate"
 include ":spring-boot-tests:postgres"

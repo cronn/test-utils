@@ -5,7 +5,7 @@ import java.util.regex.Pattern;
 import org.assertj.core.api.SoftAssertions;
 import org.assertj.core.api.junit.jupiter.InjectSoftAssertions;
 import org.assertj.core.api.junit.jupiter.SoftAssertionsExtension;
-import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
@@ -21,6 +21,7 @@ import de.cronn.testutils.h2.app.SampleTableGeneratedEntity;
 import de.cronn.testutils.h2.app.SecondSchemaEntity;
 import de.cronn.testutils.h2.app.SequenceUsingEntity;
 import de.cronn.testutils.h2.app.TransactionUtil;
+import de.cronn.testutils.hibernate.HibernateUtil;
 import jakarta.persistence.EntityManager;
 
 @ExtendWith(SoftAssertionsExtension.class)
@@ -30,6 +31,9 @@ public class H2UtilTest {
 
 	@Autowired
 	H2Util h2Util;
+
+	@Autowired
+	HibernateUtil hibernateUtil;
 
 	@Autowired
 	JdbcTemplate jdbcTemplate;
@@ -43,9 +47,10 @@ public class H2UtilTest {
 	@InjectSoftAssertions
 	SoftAssertions softly;
 
-	@AfterEach
+	@BeforeEach
 	void resetDatabase() {
 		h2Util.resetDatabase();
+		hibernateUtil.resetSequenceGeneratorStates();
 	}
 
 	@Test

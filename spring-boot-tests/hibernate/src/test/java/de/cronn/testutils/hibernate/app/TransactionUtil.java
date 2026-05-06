@@ -1,4 +1,4 @@
-package de.cronn.testutils.postgres.app;
+package de.cronn.testutils.hibernate.app;
 
 import java.util.concurrent.Callable;
 

@@ -45,7 +45,15 @@ public class H2Util {
 	}
 
 	/**
-	 * @param tablesToExclude Example when using Liquibase: Pattern.compile("^public\\.databasechangelog.*", Pattern.CASE_INSENSITIVE)
+	 * Empties all tables and restarts all sequences.
+	 *
+	 * <p>If you use JPA with Hibernate, also call
+	 * {@code HibernateUtil.resetSequenceGeneratorStates()} afterwards to keep Hibernate's
+	 * in-memory sequence cache in sync. {@code HibernateUtil} is provided by the
+	 * {@code de.cronn:test-utils-hibernate-support} Gradle feature variant.
+	 *
+	 * @param tablesToExclude tables matching any of the given patterns are not cleared.
+	 *     Example when using Liquibase: {@code Pattern.compile("^public\\.databasechangelog.*", Pattern.CASE_INSENSITIVE)}
 	 */
 	public void resetDatabase(Pattern... tablesToExclude) {
 		try {

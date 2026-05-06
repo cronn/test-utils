@@ -61,6 +61,16 @@ public class PostgresUtil {
 		truncateTablesCascade(tableNames);
 	}
 
+	/**
+	 * Resets all sequences with a non-null {@code last_value} back to 1.
+	 *
+	 * <p>Returns the names of the sequences that were reset. Pass this list to
+	 * {@code HibernateUtil.resetSequenceGeneratorStates()} to keep Hibernate's in-memory
+	 * sequence cache in sync. {@code HibernateUtil} is provided by the
+	 * {@code de.cronn:test-utils-hibernate-support} Gradle feature variant.
+	 *
+	 * @return the names of the reset sequences
+	 */
 	@Transactional
 	public List<String> resetAllSequences() {
 		List<String> sequenceNames = getSequenceNamesThatNeedToBeReset();

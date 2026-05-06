@@ -33,6 +33,7 @@ allprojects {
 sourceSets {
 	h2Support {}
 	postgresSupport {}
+	hibernateSupport {}
 }
 
 java {
@@ -47,6 +48,9 @@ java {
 	}
 	registerFeature("springSupport") {
 		usingSourceSet(sourceSets.main)
+	}
+	registerFeature("hibernateSupport") {
+		usingSourceSet(sourceSets.hibernateSupport)
 	}
 }
 
@@ -76,6 +80,11 @@ dependencies {
 	postgresSupportImplementation "org.springframework.boot:spring-boot-autoconfigure"
 	postgresSupportImplementation "org.springframework:spring-jdbc"
 	postgresSupportImplementation "org.springframework:spring-tx"
+
+	hibernateSupportImplementation "org.springframework.boot:spring-boot-autoconfigure"
+	hibernateSupportImplementation "jakarta.persistence:jakarta.persistence-api"
+	hibernateSupportImplementation "org.hibernate.orm:hibernate-core"
+	hibernateSupportImplementation "de.cronn:reflection-util:2.19.1"
 
 	springSupportImplementation "org.springframework:spring-context"
 	springSupportImplementation "org.springframework:spring-test"

@@ -1,11 +1,11 @@
 package de.cronn.testutils.postgres;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.*;
 
 import java.sql.SQLException;
 import java.util.List;
 
-import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.MethodOrderer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
@@ -17,6 +17,7 @@ import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import de.cronn.testutils.hibernate.HibernateUtil;
 import de.cronn.testutils.postgres.app.Application;
 import de.cronn.testutils.postgres.app.SampleEntity;
 import de.cronn.testutils.postgres.app.TransactionUtil;
@@ -35,6 +36,9 @@ class PostgresUtilTest {
 	PostgresUtil postgresUtil;
 
 	@Autowired
+	HibernateUtil hibernateUtil;
+
+	@Autowired
 	JdbcTemplate jdbcTemplate;
 
 	@Autowired
@@ -43,10 +47,13 @@ class PostgresUtilTest {
 	@Autowired
 	TransactionUtil transactionUtil;
 
-	@AfterEach
+	@BeforeEach
 	void cleanDatabase() throws SQLException {
 		postgresUtil.truncateAllTables();
-		postgresUtil.resetAllSequences();
+		List<String> resetSequences = postgresUtil.resetAllSequences();
+		if (!resetSequences.isEmpty()) {
+			hibernateUtil.resetSequenceGeneratorStates(resetSequences);
+		}
 	}
 
 	@Test
@@ -69,6 +76,29 @@ class PostgresUtilTest {
 	void step02_assertDatabaseIsClean() {
 		assertThat(countRows("sample_entity")).isEqualTo(0);
 		assertThat(nextSequenceValue("sample_entity_seq")).isEqualTo(1L);
+	}
+
+	@Test
+	void step03_assertEntityIdsStartAtOneAfterFullReset() throws Exception {
+		// Fill DB so that Hibernate's internal sequence cache is warmed up
+		transactionUtil.doInTransaction(() -> {
+			entityManager.persist(new SampleEntity());
+			entityManager.persist(new SampleEntity());
+			entityManager.persist(new SampleEntity());
+		});
+
+		// Reset DB and Hibernate's in-memory state
+		postgresUtil.truncateAllTables();
+		postgresUtil.resetAllSequences();
+		hibernateUtil.resetSequenceGeneratorStates();
+
+		SampleEntity entity = transactionUtil.doInTransactionWithResult(() -> {
+			SampleEntity e = new SampleEntity();
+			entityManager.persist(e);
+			entityManager.flush();
+			return e;
+		});
+		assertThat(entity.getId()).isEqualTo(1L);
 	}
 
 	private int countRows(String table) {

@@ -115,7 +115,7 @@ Empty state is defined as:
 `H2Util` is automatically provided as a Spring bean via auto-configuration when the h2-support feature and a single `DataSource` bean are present on the classpath. No manual `@Bean` definition or `@Import` is needed.
 
 > [!NOTE]
-> Hibernate can cache sequence values in advance. You may want to disable this by setting [`hibernate.id.optimizer.pooled.preferred`](https://docs.jboss.org/hibernate/orm/6.5/userguide/html_single/Hibernate_User_Guide.html#settings-mapping) to `NONE`, for example via `spring.jpa.properties.hibernate.id.optimizer.pooled.preferred=NONE`.
+> Hibernate caches sequence values in advance. If you use JPA with Hibernate, see [Hibernate support](#%EF%B8%8F-hibernate-support) to keep Hibernate's in-memory sequence state in sync after each database reset.
 
 Gradle:
 ```groovy
@@ -141,6 +141,8 @@ Maven:
 
 `PostgresUtil` brings a PostgreSQL database back to a clean state between tests. It is designed for use in Spring Boot integration tests and is automatically registered as a Spring bean via auto-configuration.
 
+`truncateAllTables()` truncates all tables in the `public` schema (excluding Liquibase changelog tables) with `RESTART IDENTITY CASCADE`. Tables can be excluded by name. `resetAllSequences()` resets all sequences with a non-null `last_value` back to 1 and returns the names of the reset sequences.
+
 Typical usage in a `@BeforeEach` callback:
 
 ```java
@@ -151,10 +153,8 @@ void cleanupDatabase(@Autowired PostgresUtil postgresUtil) throws SQLException {
 }
 ```
 
-`truncateAllTables()` truncates all tables in the `public` schema (excluding Liquibase changelog tables) with `RESTART IDENTITY CASCADE`. Tables can be excluded by name. `resetAllSequences()` resets all sequences with a non-null `last_value` back to 1 and also resets Hibernate's internal sequence generator state to stay in sync.
-
 > [!NOTE]
-> `resetAllSequences()` accesses internal Hibernate APIs to reset cached sequence state. Test thoroughly after Hibernate upgrades.
+> Hibernate caches sequence values in advance. If you use JPA with Hibernate, see [Hibernate support](#-hibernate-support) to keep Hibernate's in-memory sequence state in sync after each database reset.
 
 Gradle:
 ```groovy
@@ -173,6 +173,58 @@ Maven:
     <version>{version}</version>
     <scope>test</scope>
     <classifier>postgres-support</classifier>
+</dependency>
+```
+
+### Hibernate support
+
+Hibernate's pooled sequence optimizer pre-allocates IDs in batches: it fetches the next high value from the database sequence once, then serves IDs from its in-memory cache until the batch is exhausted. This reduces the number of sequence queries, especially with batched inserts.
+
+In integration tests, database sequences are typically reset between test runs to keep generated IDs deterministic. However, resetting the database sequence does not clear Hibernate's in-memory cache. On the next insert, Hibernate continues serving IDs from the stale cache, which causes either duplicate key errors or unexpected ID values.
+
+`HibernateUtil` resolves this by resetting the internal state of all Hibernate sequence generators. It is automatically registered as a Spring bean via auto-configuration.
+
+```java
+@BeforeEach
+void cleanupDatabase(
+        @Autowired PostgresUtil postgresUtil,
+        @Autowired HibernateUtil hibernateUtil) throws SQLException {
+    postgresUtil.truncateAllTables();
+    List<String> resetSequences = postgresUtil.resetAllSequences();
+    if (!resetSequences.isEmpty()) {
+        hibernateUtil.resetSequenceGeneratorStates(resetSequences);
+    }
+}
+```
+
+> [!NOTE]
+> `HibernateUtil` accesses internal Hibernate APIs via reflection. Test thoroughly after Hibernate upgrades.
+
+Alternatively, you can disable Hibernate's sequence caching entirely:
+
+```properties
+spring.jpa.properties.hibernate.id.optimizer.pooled.preferred=NONE
+```
+
+This avoids the need for `HibernateUtil`, but requires one sequence query per entity insertion instead of one query per batch. This is particularly costly when using batched inserts.
+
+Gradle:
+```groovy
+testImplementation("de.cronn:test-utils:{version}") {
+    capabilities {
+        requireCapability("de.cronn:test-utils-hibernate-support")
+    }
+}
+```
+
+Maven:
+```xml
+<dependency>
+    <groupId>de.cronn</groupId>
+    <artifactId>test-utils</artifactId>
+    <version>{version}</version>
+    <scope>test</scope>
+    <classifier>hibernate-support</classifier>
 </dependency>
 ```
 
