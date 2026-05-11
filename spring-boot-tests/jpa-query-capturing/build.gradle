@@ -1,0 +1,27 @@
+plugins {
+    id "java-library"
+}
+
+dependencies {
+    implementation platform("org.springframework.boot:spring-boot-dependencies:${rootProject.ext.springBootVersion}")
+    implementation "org.springframework.boot:spring-boot-starter-test"
+    implementation "org.springframework.boot:spring-boot-starter-data-jpa"
+    implementation(project(":")) {
+        capabilities {
+            requireCapability("de.cronn:test-utils-jpa-query-capturing")
+        }
+    }
+    implementation(project(":")) {
+        capabilities {
+            requireCapability("de.cronn:test-utils-h2-support")
+        }
+    }
+    runtimeOnly "com.h2database:h2"
+    runtimeOnly "org.junit.platform:junit-platform-launcher"
+}
+
+test {
+    inputs.dir("data/test/validation")
+    outputs.dir("data/test/output")
+    outputs.dir("data/test/tmp")
+}

@@ -1,0 +1,22 @@
+Name:dataSource, Isolation:NONE, Success:True
+Type:Prepared, Batch:False, QuerySize:1, BatchSize:0
+Query:["
+    insert 
+    into
+        sample_entity
+        (id) 
+    values
+        (default)"]
+Params:[()]
+
+
+Name:dataSource, Isolation:NONE, Success:True
+Type:Prepared, Batch:False, QuerySize:1, BatchSize:0
+Query:["
+    insert 
+    into
+        child_entity
+        (name, parent_id, id) 
+    values
+        (?, ?, default)"]
+Params:[(Some Child,1)]
