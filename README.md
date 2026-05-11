@@ -259,3 +259,94 @@ Maven:
     <classifier>spring-support</classifier>
 </dependency>
 ```
+
+### 🔍 JPA query capturing
+
+`QueryCaptor` captures the SQL queries and their parameters executed during a test via [datasource-proxy](https://github.com/ttddyy/datasource-proxy). This makes it easy to detect N+1 problems, unexpected lazy loading, or unintended updates. See [hibernate-stop-guessing-start-testing](https://github.com/cronn/hibernate-stop-guessing-start-testing) for a full example and background.
+
+A `QueryCaptor` bean is provided automatically via auto-configuration and can be injected into test classes. Use `captureQueriesDuring(...)` to capture all SQL executed within a block and `getCapturedQueries()` to retrieve the formatted results:
+
+```java
+@SpringBootTest
+class OrderServiceTest {
+
+    @Autowired QueryCaptor queryCaptor;
+
+    @Test
+    void loadsOrders() throws Exception {
+        queryCaptor.captureQueriesDuring(() -> orderService.findAll());
+        List<String> queries = queryCaptor.getCapturedQueries();
+        assertThat(queries).hasSize(1);
+    }
+
+    @Test
+    void createsOrder() throws Exception {
+        Order created = queryCaptor.captureQueriesDuring(() -> orderService.create(new OrderRequest(...)));
+        assertThat(created.getId()).isNotNull();
+    }
+}
+```
+
+> [!TIP]
+> Knowing how many queries were executed is a start, but to really catch regressions you also want to verify exactly which queries ran, which tables were touched, which parameters were bound, and whether a `JOIN` suddenly turned into N selects. Asserting all of that inline gets verbose fast. That's where `QueryValidationTraits` comes in.
+
+#### Asserting against validation files
+
+`QueryValidationTraits` is a mixin interface that connects `QueryCaptor` with [validation-file-assertions](https://github.com/cronn/validation-file-assertions). It captures the full formatted query output and compares it against a validation file in a single call to `captureQueryAndCompareWithFile(...)`. Implement `getQueryCaptor()` to wire it in:
+
+```java
+@SpringBootTest
+class OrderServiceTest implements QueryValidationTraits {
+
+    @Autowired QueryCaptor queryCaptor;
+
+    @Override
+    public QueryCaptor getQueryCaptor() {
+        return queryCaptor;
+    }
+
+    @Test
+    void loadsOrders() {
+        captureQueryAndCompareWithFile(() -> orderService.findAll());
+    }
+
+    @Test
+    void createsOrder() {
+        Order created = captureQueryAndCompareWithFile(() -> orderService.create(new OrderRequest(...)));
+        assertThat(created.getId()).isNotNull();
+    }
+}
+```
+
+On the first run the validation file is generated automatically and contains the full SQL of every captured query including its bound parameters. On subsequent runs the output is compared against it, so any change in query structure, table access, or parameter values will fail the test. See the [validation-file-assertions](https://github.com/cronn/validation-file-assertions) documentation for details on file locations and how to update validation files.
+
+By default, byte array parameters are masked with `[MASKED-BYTE-ARRAY]` via `ByteArrayReplacer`. Override `defaultValidationNormalizerForQueryCaptor()` in your test class to supply a different normalizer, or pass one explicitly:
+
+```java
+captureQueryAndCompareWithFile(() -> orderService.findAll(), new MyCustomNormalizer());
+```
+
+If Hibernate is on the classpath, SQL queries are automatically formatted using Hibernate's SQL formatter. To use a different formatter, define a `SqlQueryFormatter` bean in your test application context; it will take precedence over the default.
+
+> [!NOTE]
+> `de.cronn:validation-file-assertions` and `datasource-proxy-spring-boot-starter` are pulled in automatically as transitive dependencies.
+
+Gradle:
+```groovy
+testImplementation("de.cronn:test-utils:{version}") {
+    capabilities {
+        requireCapability("de.cronn:test-utils-jpa-query-capturing")
+    }
+}
+```
+
+Maven:
+```xml
+<dependency>
+    <groupId>de.cronn</groupId>
+    <artifactId>test-utils</artifactId>
+    <version>{version}</version>
+    <scope>test</scope>
+    <classifier>jpa-query-capturing-support</classifier>
+</dependency>
+```
