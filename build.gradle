@@ -108,6 +108,9 @@ dependencies {
 	springSupportImplementation "org.springframework:spring-test"
 
 	authorizationTestImplementation "org.springframework:spring-webmvc"
+	authorizationTestImplementation "org.springframework:spring-test"
+	authorizationTestImplementation "org.springframework.boot:spring-boot"
+	authorizationTestApi "org.junit.jupiter:junit-jupiter-api"
 
 	testImplementation "org.assertj:assertj-core"
 	testImplementation "org.mockito:mockito-core"

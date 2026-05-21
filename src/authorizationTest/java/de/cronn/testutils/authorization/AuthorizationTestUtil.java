@@ -27,14 +27,10 @@ import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandl
  * <p>Discovers all endpoints registered in a {@link RequestMappingHandlerMapping}, calls each one
  * with the provided Bearer tokens, and produces a Markdown table listing which roles had access.
  *
- * <p>Usage:
+ * <p>The recommended way to obtain an instance is via {@link AuthorizationTestExtension}.
+ * For custom adaptations, construct the instance directly:
  * <pre>{@code
- * List<RoleAndToken> roles = List.of(
- *     new RoleAndToken("ADMIN", adminToken),
- *     new RoleAndToken("USER",  userToken)
- * );
- * String markdown = AuthorizationTestUtil.buildAuthorizationMatrix(
- *     localServerPort, requestMappingHandlerMapping, roles, List.of("/test-helper"));
+ * new AuthorizationTestUtil(handlerMapping, AuthorizationTestUtil.createRestClient(localServerPort))
  * }</pre>
  */
 public final class AuthorizationTestUtil {
@@ -46,23 +42,36 @@ public final class AuthorizationTestUtil {
 
 	private static final Set<RequestMethod> ALL_METHODS_EXCEPT_TRACE =
 		EnumSet.complementOf(EnumSet.of(RequestMethod.TRACE));
+	private final RequestMappingHandlerMapping handlerMapping;
+	private final RestClient restClient;
 
-	private AuthorizationTestUtil() {
+	/**
+	 * Create a util for authorization testing
+	 *
+	 * @param restClient     {@link RestClient} configured against the running application
+	 *                       (must have a base URL set, or paths must resolve absolutely)
+	 * @param handlerMapping the {@link RequestMappingHandlerMapping} bean of the application
+	 */
+	public AuthorizationTestUtil(RequestMappingHandlerMapping handlerMapping, RestClient restClient) {
+		this.handlerMapping = handlerMapping;
+		this.restClient = restClient;
+	}
+
+	/**
+	 * Like {@link #buildAuthorizationMatrix(List, List)} with no ignored path prefixes.
+	 */
+	public String buildAuthorizationMatrix(List<RoleAndToken> rolesAndTokens) {
+		return buildAuthorizationMatrix(rolesAndTokens, List.of());
 	}
 
 	/**
 	 * Discovers all endpoints and tests access for each role, returning a Markdown table.
 	 *
-	 * @param restClient          {@link RestClient} configured against the running application
-	 *                            (must have a base URL set, or paths must resolve absolutely)
-	 * @param handlerMapping      the {@link RequestMappingHandlerMapping} bean of the application
 	 * @param rolesAndTokens      the roles (with Bearer tokens) to test; role names must be unique
 	 * @param ignoredPathPrefixes endpoints whose path starts with any of these prefixes are skipped
 	 * @return a Markdown table with columns METHOD, PATH, ALLOWED_ROLES
 	 */
-	public static String buildAuthorizationMatrix(
-		RestClient restClient,
-		RequestMappingHandlerMapping handlerMapping,
+	public String buildAuthorizationMatrix(
 		List<RoleAndToken> rolesAndTokens,
 		List<String> ignoredPathPrefixes) {
 
@@ -73,59 +82,13 @@ public final class AuthorizationTestUtil {
 	}
 
 	/**
-	 * Like {@link #buildAuthorizationMatrix(RestClient, RequestMappingHandlerMapping, List, List)},
-	 * but builds an internal {@link RestClient} from {@code baseUrl} with defensive 5s connect /
-	 * 10s read timeouts.
+	 * Builds an internal {@link RestClient} from {@code baseUrl} with defensive 5s connect / 10s read timeouts.
 	 *
-	 * @param baseUrl base URL of the running application (e.g. {@code "http://localhost:8080"});
+	 * @param baseUrl - base URL of the running application (e.g. {@code "http://localhost:8080"});
 	 *                paths discovered from {@code handlerMapping} are appended to it
+	 * @return a rest client that can be used for authorization tests
 	 */
-	public static String buildAuthorizationMatrix(
-		String baseUrl,
-		RequestMappingHandlerMapping handlerMapping,
-		List<RoleAndToken> rolesAndTokens,
-		List<String> ignoredPathPrefixes) {
-		return buildAuthorizationMatrix(
-			defaultRestClient(baseUrl), handlerMapping, rolesAndTokens, ignoredPathPrefixes);
-	}
-
-	/**
-	 * Like {@link #buildAuthorizationMatrix(String, RequestMappingHandlerMapping, List, List)}
-	 * with no ignored path prefixes.
-	 */
-	public static String buildAuthorizationMatrix(
-		String baseUrl,
-		RequestMappingHandlerMapping handlerMapping,
-		List<RoleAndToken> rolesAndTokens) {
-		return buildAuthorizationMatrix(baseUrl, handlerMapping, rolesAndTokens, List.of());
-	}
-
-	/**
-	 * Like {@link #buildAuthorizationMatrix(String, RequestMappingHandlerMapping, List, List)},
-	 * but targets {@code http://localhost:<localServerPort>} — convenient for use with
-	 * {@code @LocalServerPort}.
-	 */
-	public static String buildAuthorizationMatrix(
-		int localServerPort,
-		RequestMappingHandlerMapping handlerMapping,
-		List<RoleAndToken> rolesAndTokens,
-		List<String> ignoredPathPrefixes) {
-		return buildAuthorizationMatrix(
-			"http://localhost:" + localServerPort, handlerMapping, rolesAndTokens, ignoredPathPrefixes);
-	}
-
-	/**
-	 * Like {@link #buildAuthorizationMatrix(int, RequestMappingHandlerMapping, List, List)}
-	 * with no ignored path prefixes.
-	 */
-	public static String buildAuthorizationMatrix(
-		int localServerPort,
-		RequestMappingHandlerMapping handlerMapping,
-		List<RoleAndToken> rolesAndTokens) {
-		return buildAuthorizationMatrix(localServerPort, handlerMapping, rolesAndTokens, List.of());
-	}
-
-	private static RestClient defaultRestClient(String baseUrl) {
+	public static RestClient createRestClient(String baseUrl) {
 		HttpClient httpClient = HttpClient.newBuilder()
 			.connectTimeout(DEFAULT_CONNECT_TIMEOUT)
 			.build();
@@ -135,6 +98,17 @@ public final class AuthorizationTestUtil {
 			.baseUrl(baseUrl)
 			.requestFactory(requestFactory)
 			.build();
+	}
+
+	/**
+	 * Like {@link #createRestClient(String)} but targets {@code http://localhost:<localServerPort>}
+	 * — convenient for use with {@code @LocalServerPort}.
+	 *
+	 * @param localServerPort of the application
+	 * @return a rest client that can be used for authorization tests
+	 */
+	public static RestClient createRestClient(int localServerPort) {
+		return createRestClient("http://localhost:" + localServerPort);
 	}
 
 	private static void validateRolesAndTokens(List<RoleAndToken> rolesAndTokens) {

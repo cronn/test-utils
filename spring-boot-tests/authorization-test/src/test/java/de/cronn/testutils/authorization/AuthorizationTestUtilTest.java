@@ -7,13 +7,11 @@ import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.server.LocalServerPort;
-import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
 
 import de.cronn.assertions.validationfile.FileExtensions;
 import de.cronn.assertions.validationfile.junit5.JUnit5ValidationFileAssertions;
@@ -23,14 +21,8 @@ import de.cronn.testutils.authorization.app.SimulatedStatusFilter;
 import de.cronn.testutils.authorization.app.TestApplication;
 
 @SpringBootTest(classes = TestApplication.class, webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@ExtendWith(AuthorizationTestExtension.class)
 class AuthorizationTestUtilTest implements JUnit5ValidationFileAssertions {
-
-	@LocalServerPort
-	private int port;
-
-	@Autowired
-	@Qualifier("requestMappingHandlerMapping")
-	private RequestMappingHandlerMapping handlerMapping;
 
 	@Autowired
 	private JwtTestTokenFactory tokenFactory;
@@ -38,10 +30,6 @@ class AuthorizationTestUtilTest implements JUnit5ValidationFileAssertions {
 	@BeforeEach
 	void clearSimulatedStatus() {
 		SimulatedStatusFilter.reset();
-	}
-
-	private String baseUrl() {
-		return "http://localhost:" + port;
 	}
 
 	private RoleAndToken roleAndToken(Role role) {
@@ -53,64 +41,59 @@ class AuthorizationTestUtilTest implements JUnit5ValidationFileAssertions {
 	}
 
 	@Test
-	void buildAuthorizationMatrix_withAllThreeRoles() {
+	void buildAuthorizationMatrix_withAllThreeRoles(AuthorizationTestUtil authorizationTestUtil) {
 		List<RoleAndToken> roles = rolesAndTokensFor(Role.ADMIN, Role.USER, Role.GUEST);
 
-		String markdown = AuthorizationTestUtil.buildAuthorizationMatrix(
-			baseUrl(), handlerMapping, roles, List.of("/regex"));
+		String markdown = authorizationTestUtil.buildAuthorizationMatrix(roles, List.of("/regex"));
 
 		assertWithFile(markdown, FileExtensions.MD);
 	}
 
 	@Test
-	void buildAuthorizationMatrix_withIgnoredActuatorPrefix() {
+	void buildAuthorizationMatrix_withIgnoredActuatorPrefix(AuthorizationTestUtil authorizationTestUtil) {
 		List<RoleAndToken> roles = rolesAndTokensFor(Role.ADMIN, Role.USER, Role.GUEST);
 
-		String markdown = AuthorizationTestUtil.buildAuthorizationMatrix(
-			baseUrl(), handlerMapping, roles, List.of("/actuator", "/error", "/regex"));
+		String markdown = authorizationTestUtil.buildAuthorizationMatrix(
+			roles, List.of("/actuator", "/error", "/regex"));
 
 		assertWithFile(markdown, FileExtensions.MD);
 	}
 
 	@Test
-	void buildAuthorizationMatrix_throwsOnRegexConstrainedPathVariable() {
+	void buildAuthorizationMatrix_throwsOnRegexConstrainedPathVariable(AuthorizationTestUtil authorizationTestUtil) {
 		List<RoleAndToken> roles = rolesAndTokensFor(Role.ADMIN);
 
-		assertThatThrownBy(() -> AuthorizationTestUtil.buildAuthorizationMatrix(
-			baseUrl(), handlerMapping, roles, List.of()))
+		assertThatThrownBy(() -> authorizationTestUtil.buildAuthorizationMatrix(roles))
 			.isInstanceOf(IllegalStateException.class)
 			.hasMessageContaining("/regex/{id:[0-9]+}")
 			.hasMessageContaining("regex-constrained variable");
 	}
 
 	@Test
-	void buildAuthorizationMatrix_throwsOnDuplicateRoleNames() {
+	void buildAuthorizationMatrix_throwsOnDuplicateRoleNames(AuthorizationTestUtil authorizationTestUtil) {
 		List<RoleAndToken> roles = List.of(
 			new RoleAndToken(Role.ADMIN.name(), tokenFactory.tokenForRoles(Role.ADMIN)),
 			new RoleAndToken(Role.ADMIN.name(), tokenFactory.tokenForRoles(Role.USER)));
 
-		assertThatThrownBy(() -> AuthorizationTestUtil.buildAuthorizationMatrix(
-			baseUrl(), handlerMapping, roles, List.of()))
+		assertThatThrownBy(() -> authorizationTestUtil.buildAuthorizationMatrix(roles))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("Duplicate role name: ADMIN");
 	}
 
 	@ParameterizedTest
 	@ValueSource(ints = { 429, 502, 503, 504 })
-	void buildAuthorizationMatrix_throwsOnUnexpectedStatus(int status) {
+	void buildAuthorizationMatrix_throwsOnUnexpectedStatus(int status, AuthorizationTestUtil authorizationTestUtil) {
 		SimulatedStatusFilter.simulateStatus(status);
 		List<RoleAndToken> roles = rolesAndTokensFor(Role.ADMIN);
 
-		assertThatThrownBy(() -> AuthorizationTestUtil.buildAuthorizationMatrix(
-			baseUrl(), handlerMapping, roles, List.of("/regex")))
+		assertThatThrownBy(() -> authorizationTestUtil.buildAuthorizationMatrix(roles, List.of("/regex")))
 			.isInstanceOf(IllegalStateException.class)
 			.hasMessageContaining(String.valueOf(status));
 	}
 
 	@Test
-	void buildAuthorizationMatrix_throwsOnEmptyRoles() {
-		assertThatThrownBy(() -> AuthorizationTestUtil.buildAuthorizationMatrix(
-			baseUrl(), handlerMapping, List.of(), List.of()))
+	void buildAuthorizationMatrix_throwsOnEmptyRoles(AuthorizationTestUtil authorizationTestUtil) {
+		assertThatThrownBy(() -> authorizationTestUtil.buildAuthorizationMatrix(List.of()))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("must not be empty");
 	}
