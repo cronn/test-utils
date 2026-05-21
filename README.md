@@ -366,20 +366,50 @@ Endpoints accessible to every provided role render as `{ANY_ROLE}`;
 anonymously accessible endpoints render as `{UNAUTHENTICATED}`.
 
 
+The easiest way to use `AuthorizationTestUtil` is via the provided JUnit 5 extension,
+which wires up the utility automatically from the Spring application context:
+
 ```java
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@ExtendWith(AuthorizationTestExtension.class)
 class MyAuthorizationTest implements JUnit5ValidationFileAssertions {
 
-    @LocalServerPort int port;
-    @Autowired RequestMappingHandlerMapping handlerMapping;
-
     @Test
-    void authorizationMatrix() {
+    void authorizationMatrix(AuthorizationTestUtil authorizationTestUtil) {
         List<RoleAndToken> roles = List.of(
             new RoleAndToken("ADMIN", adminToken),
             new RoleAndToken("USER",  userToken));
-        String markdown = AuthorizationTestUtil.buildAuthorizationMatrix(
-            port, handlerMapping, roles, List.of("/ignored-endpoint-prefix"));
+        String markdown = authorizationTestUtil.buildAuthorizationMatrix(
+            roles, List.of("/ignored-endpoint-prefix"));
+        assertWithFile(markdown, FileExtensions.MD);
+    }
+}
+```
+
+If you need more control (e.g. a custom `RestClient`), you can construct `AuthorizationTestUtil` directly:
+
+```java
+import org.springframework.beans.factory.annotation.Qualifier;
+
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+class MyAuthorizationTest implements JUnit5ValidationFileAssertions {
+
+    @LocalServerPort
+    int port;
+    
+    @Autowired
+    @Qualifier("requestMappingHandlerMapping") 
+    RequestMappingHandlerMapping handlerMapping;
+
+    @Test
+    void authorizationMatrix() {
+        AuthorizationTestUtil authorizationTestUtil =
+                new AuthorizationTestUtil(handlerMapping, AuthorizationTestUtil.createRestClient(port));
+        List<RoleAndToken> roles = List.of(
+                new RoleAndToken("ADMIN", adminToken),
+                new RoleAndToken("USER", userToken));
+        String markdown = authorizationTestUtil.buildAuthorizationMatrix(
+                roles, List.of("/ignored-endpoint-prefix"));
         assertWithFile(markdown, FileExtensions.MD);
     }
 }
