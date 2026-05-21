@@ -32,6 +32,10 @@ class AuthorizationTestUtilTest implements JUnit5ValidationFileAssertions {
 		SimulatedStatusFilter.reset();
 	}
 
+	private String tokenWithNoRoles() {
+		return tokenFactory.tokenForRoles();
+	}
+
 	private RoleAndToken roleAndToken(Role role) {
 		return new RoleAndToken(role.name(), tokenFactory.tokenForRoles(role));
 	}
@@ -44,7 +48,7 @@ class AuthorizationTestUtilTest implements JUnit5ValidationFileAssertions {
 	void buildAuthorizationMatrix_withAllThreeRoles(AuthorizationTestUtil authorizationTestUtil) {
 		List<RoleAndToken> roles = rolesAndTokensFor(Role.ADMIN, Role.USER, Role.GUEST);
 
-		String markdown = authorizationTestUtil.buildAuthorizationMatrix(roles, List.of("/regex"));
+		String markdown = authorizationTestUtil.buildAuthorizationMatrix(roles, tokenWithNoRoles(), List.of("/regex"));
 
 		assertWithFile(markdown, FileExtensions.MD);
 	}
@@ -54,7 +58,7 @@ class AuthorizationTestUtilTest implements JUnit5ValidationFileAssertions {
 		List<RoleAndToken> roles = rolesAndTokensFor(Role.ADMIN, Role.USER, Role.GUEST);
 
 		String markdown = authorizationTestUtil.buildAuthorizationMatrix(
-			roles, List.of("/actuator", "/error", "/regex"));
+			roles, tokenWithNoRoles(), List.of("/actuator", "/error", "/regex"));
 
 		assertWithFile(markdown, FileExtensions.MD);
 	}

@@ -3,7 +3,6 @@ package de.cronn.testutils.authorization;
 
 import java.net.http.HttpClient;
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.LinkedHashSet;
@@ -15,6 +14,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
+import org.springframework.lang.Nullable;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.servlet.mvc.condition.PathPatternsRequestCondition;
@@ -65,19 +65,39 @@ public final class AuthorizationTestUtil {
 	}
 
 	/**
+	 * Like {@link #buildAuthorizationMatrix(List, String, List)} with no ignored path prefixes.
+	 */
+	public String buildAuthorizationMatrix(List<RoleAndToken> rolesAndTokens, @Nullable String authenticatedToken) {
+		return buildAuthorizationMatrix(rolesAndTokens, authenticatedToken, List.of());
+	}
+
+	/**
+	 * Like {@link #buildAuthorizationMatrix(List, String, List)} without an authenticated token check.
+	 */
+	public String buildAuthorizationMatrix(List<RoleAndToken> rolesAndTokens, List<String> ignoredPathPrefixes) {
+		return buildAuthorizationMatrix(rolesAndTokens, null, ignoredPathPrefixes);
+	}
+
+	/**
 	 * Discovers all endpoints and tests access for each role, returning a Markdown table.
 	 *
+	 * <p>In addition to testing each role, this optionally checks access with a token that carries
+	 * no roles (an authenticated but unprivileged caller). Pass {@code null} to skip this check.
+	 * The result renders as {@code {AUTHENTICATED}} in the matrix when the endpoint is accessible.
+	 *
 	 * @param rolesAndTokens      the roles (with Bearer tokens) to test; role names must be unique
+	 * @param authenticatedToken  a Bearer token for an authenticated but unprivileged caller, or {@code null} to skip
 	 * @param ignoredPathPrefixes endpoints whose path starts with any of these prefixes are skipped
 	 * @return a Markdown table with columns METHOD, PATH, ALLOWED_ROLES
 	 */
 	public String buildAuthorizationMatrix(
 		List<RoleAndToken> rolesAndTokens,
+		@Nullable String authenticatedToken,
 		List<String> ignoredPathPrefixes) {
 
 		validateRolesAndTokens(rolesAndTokens);
 		List<Endpoint> endpoints = discoverEndpoints(handlerMapping, ignoredPathPrefixes);
-		List<EndpointResult> results = testEndpoints(restClient, endpoints, rolesAndTokens);
+		List<EndpointResult> results = testEndpoints(restClient, endpoints, rolesAndTokens, authenticatedToken);
 		return renderMarkdown(results, allRoleNames(rolesAndTokens));
 	}
 
@@ -179,25 +199,47 @@ public final class AuthorizationTestUtil {
 	private static List<EndpointResult> testEndpoints(
 		RestClient restClient,
 		List<Endpoint> endpoints,
-		List<RoleAndToken> rolesAndTokens) {
+		List<RoleAndToken> rolesAndTokens,
+		@Nullable String authenticatedToken) {
 
-		List<EndpointResult> results = new ArrayList<>();
-		for (Endpoint endpoint : endpoints) {
-			boolean unauthenticatedAllowed = isAllowed(callEndpoint(restClient, endpoint, null));
-			if (unauthenticatedAllowed) {
-				results.add(new EndpointResult(endpoint, null, true));
-			} else {
-				List<String> allowedRoles = new ArrayList<>();
-				for (RoleAndToken roleAndToken : rolesAndTokens) {
-					HttpStatusCode status = callEndpoint(restClient, endpoint, roleAndToken.accessToken());
-					if (isAllowed(status)) {
-						allowedRoles.add(roleAndToken.roleName());
-					}
-				}
-				results.add(new EndpointResult(endpoint, allowedRoles, unauthenticatedAllowed));
-			}
+		return endpoints.stream()
+			.map(endpoint -> testEndpoint(restClient, endpoint, rolesAndTokens, authenticatedToken))
+			.toList();
+	}
+
+	private static EndpointResult testEndpoint(
+		RestClient restClient,
+		Endpoint endpoint,
+		List<RoleAndToken> rolesAndTokens,
+		@Nullable String authenticatedToken) {
+
+		if (isUnauthenticatedAllowed(restClient, endpoint)) {
+			return new EndpointResult(endpoint, List.of(), true, null);
 		}
-		return results;
+		Boolean authenticatedAllowed = checkAuthenticatedAccess(restClient, endpoint, authenticatedToken);
+		if (Boolean.TRUE.equals(authenticatedAllowed)) {
+			return new EndpointResult(endpoint, List.of(), false, true);
+		}
+		return new EndpointResult(endpoint, checkRoleAccess(restClient, endpoint, rolesAndTokens), false, authenticatedAllowed);
+	}
+
+	private static boolean isUnauthenticatedAllowed(RestClient restClient, Endpoint endpoint) {
+		return isAllowed(callEndpoint(restClient, endpoint, null));
+	}
+
+	@Nullable
+	private static Boolean checkAuthenticatedAccess(RestClient restClient, Endpoint endpoint, @Nullable String authenticatedToken) {
+		if (authenticatedToken == null) {
+			return null;
+		}
+		return isAllowed(callEndpoint(restClient, endpoint, authenticatedToken));
+	}
+
+	private static List<String> checkRoleAccess(RestClient restClient, Endpoint endpoint, List<RoleAndToken> rolesAndTokens) {
+		return rolesAndTokens.stream()
+			.filter(roleAndToken -> isAllowed(callEndpoint(restClient, endpoint, roleAndToken.accessToken())))
+			.map(RoleAndToken::roleName)
+			.toList();
 	}
 
 	private static HttpStatusCode callEndpoint(
@@ -250,7 +292,9 @@ public final class AuthorizationTestUtil {
 		if (result.unauthenticatedAllowed()) {
 			return "{⚠ PERMIT_ALL ⚠}";
 		}
-
+		if (Boolean.TRUE.equals(result.authenticatedAllowed())) {
+			return "{AUTHENTICATED}";
+		}
 		Set<String> allowed = new LinkedHashSet<>(result.allowedRoles());
 		if (allowed.equals(allRoleNames)) {
 			return "{ANY_ROLE}";
@@ -268,6 +312,6 @@ public final class AuthorizationTestUtil {
 	private record Endpoint(HttpMethod method, String path) {
 	}
 
-	private record EndpointResult(Endpoint endpoint, List<String> allowedRoles, boolean unauthenticatedAllowed) {
+	private record EndpointResult(Endpoint endpoint, List<String> allowedRoles, boolean unauthenticatedAllowed, @Nullable Boolean authenticatedAllowed) {
 	}
 }

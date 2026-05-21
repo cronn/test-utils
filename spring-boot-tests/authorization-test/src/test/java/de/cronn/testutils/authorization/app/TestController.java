@@ -22,6 +22,11 @@ public class TestController {
 		return "authenticated";
 	}
 
+	@GetMapping("/any-role")
+	public String anyRole() {
+		return "any-role";
+	}
+
 	@GetMapping("/admin")
 	public String adminGet() {
 		return "admin";

@@ -9,7 +9,8 @@
 | PATCH | /any-method | ADMIN |
 | POST | /any-method | ADMIN |
 | PUT | /any-method | ADMIN |
-| GET | /authenticated | {ANY_ROLE} |
+| GET | /any-role | {ANY_ROLE} |
+| GET | /authenticated | {AUTHENTICATED} |
 | GET | /guest-only | GUEST |
 | DELETE | /items/{id} | ADMIN |
 | GET | /items/{id} | ADMIN |
