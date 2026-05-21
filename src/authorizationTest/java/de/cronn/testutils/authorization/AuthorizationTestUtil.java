@@ -183,15 +183,19 @@ public final class AuthorizationTestUtil {
 
 		List<EndpointResult> results = new ArrayList<>();
 		for (Endpoint endpoint : endpoints) {
-			List<String> allowedRoles = new ArrayList<>();
-			for (RoleAndToken roleAndToken : rolesAndTokens) {
-				HttpStatusCode status = callEndpoint(restClient, endpoint, roleAndToken.accessToken());
-				if (isAllowed(status)) {
-					allowedRoles.add(roleAndToken.roleName());
-				}
-			}
 			boolean unauthenticatedAllowed = isAllowed(callEndpoint(restClient, endpoint, null));
-			results.add(new EndpointResult(endpoint, allowedRoles, unauthenticatedAllowed));
+			if (unauthenticatedAllowed) {
+				results.add(new EndpointResult(endpoint, null, true));
+			} else {
+				List<String> allowedRoles = new ArrayList<>();
+				for (RoleAndToken roleAndToken : rolesAndTokens) {
+					HttpStatusCode status = callEndpoint(restClient, endpoint, roleAndToken.accessToken());
+					if (isAllowed(status)) {
+						allowedRoles.add(roleAndToken.roleName());
+					}
+				}
+				results.add(new EndpointResult(endpoint, allowedRoles, unauthenticatedAllowed));
+			}
 		}
 		return results;
 	}
@@ -243,17 +247,16 @@ public final class AuthorizationTestUtil {
 	}
 
 	private static String formatAllowedCell(EndpointResult result, Set<String> allRoleNames) {
-		List<String> parts = new ArrayList<>();
 		if (result.unauthenticatedAllowed()) {
-			parts.add("{UNAUTHENTICATED}");
+			return "{⚠ PERMIT_ALL ⚠}";
 		}
+
 		Set<String> allowed = new LinkedHashSet<>(result.allowedRoles());
 		if (allowed.equals(allRoleNames)) {
-			parts.add("{ANY_ROLE}");
+			return "{ANY_ROLE}";
 		} else {
-			parts.addAll(allowed);
+			return String.join("<br>", allowed);
 		}
-		return String.join("<br>", parts);
 	}
 
 	private static Set<String> allRoleNames(List<RoleAndToken> rolesAndTokens) {

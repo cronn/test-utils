@@ -1,6 +1,6 @@
 | METHOD | PATH | ALLOWED_ROLES |
 | --- | --- | --- |
-| GET | /actuator/info | {UNAUTHENTICATED}<br>{ANY_ROLE} |
+| GET | /actuator/info | {⚠ PERMIT_ALL ⚠} |
 | GET | /admin | ADMIN |
 | POST | /admin | ADMIN |
 | DELETE | /any-method | ADMIN |
@@ -11,19 +11,19 @@
 | POST | /any-method | ADMIN |
 | PUT | /any-method | ADMIN |
 | GET | /authenticated | {ANY_ROLE} |
-| DELETE | /error | {UNAUTHENTICATED}<br>{ANY_ROLE} |
-| GET | /error | {UNAUTHENTICATED}<br>{ANY_ROLE} |
-| HEAD | /error | {UNAUTHENTICATED}<br>{ANY_ROLE} |
-| OPTIONS | /error | {UNAUTHENTICATED}<br>{ANY_ROLE} |
-| PATCH | /error | {UNAUTHENTICATED}<br>{ANY_ROLE} |
-| POST | /error | {UNAUTHENTICATED}<br>{ANY_ROLE} |
-| PUT | /error | {UNAUTHENTICATED}<br>{ANY_ROLE} |
+| DELETE | /error | {⚠ PERMIT_ALL ⚠} |
+| GET | /error | {⚠ PERMIT_ALL ⚠} |
+| HEAD | /error | {⚠ PERMIT_ALL ⚠} |
+| OPTIONS | /error | {⚠ PERMIT_ALL ⚠} |
+| PATCH | /error | {⚠ PERMIT_ALL ⚠} |
+| POST | /error | {⚠ PERMIT_ALL ⚠} |
+| PUT | /error | {⚠ PERMIT_ALL ⚠} |
 | GET | /guest-only | GUEST |
 | DELETE | /items/{id} | ADMIN |
 | GET | /items/{id} | ADMIN |
 | GET | /locked |  |
 | GET | /not-found | USER |
-| GET | /public | {UNAUTHENTICATED}<br>{ANY_ROLE} |
+| GET | /public | {⚠ PERMIT_ALL ⚠} |
 | GET | /server-error | USER |
 | GET | /teapot | USER |
 | GET | /user | ADMIN<br>USER |
