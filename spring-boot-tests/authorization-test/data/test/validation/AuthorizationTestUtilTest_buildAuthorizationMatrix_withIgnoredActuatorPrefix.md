@@ -15,7 +15,7 @@
 | GET | /items/{id} | ADMIN |
 | GET | /locked |  |
 | GET | /not-found | USER |
-| GET | /public | {UNAUTHENTICATED}<br>{ANY_ROLE} |
+| GET | /public | {⚠ PERMIT_ALL ⚠} |
 | GET | /server-error | USER |
 | GET | /teapot | USER |
 | GET | /user | ADMIN<br>USER |
