@@ -2,6 +2,7 @@ package de.cronn.testutils.authorization.app;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.stream.Stream;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -39,6 +40,7 @@ public class SecurityConfig {
 				// see spring's org.springframework.boot.autoconfigure.web.servlet.error.BasicErrorController
 				.requestMatchers("/error").permitAll()
 				.requestMatchers("/authenticated").authenticated()
+				.requestMatchers("/any-role").hasAnyRole(Stream.of(Role.values()).map(Role::name).toArray(String[]::new))
 				.requestMatchers("/admin").hasRole(Role.ADMIN.name())
 				.requestMatchers("/user").hasAnyRole(Role.ADMIN.name(), Role.USER.name())
 				.requestMatchers("/guest-only").hasRole(Role.GUEST.name())
