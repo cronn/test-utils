@@ -36,7 +36,7 @@ sourceSets {
 	hibernateSupport {}
 	springSupport {}
 	jpaQueryCapturingSupport {}
-	authorizationTest {}
+	authorizationTestSupport {}
 }
 
 java {
@@ -58,8 +58,8 @@ java {
 	registerFeature("jpaQueryCapturingSupport") {
 		usingSourceSet(sourceSets.jpaQueryCapturingSupport)
 	}
-	registerFeature("authorizationTest") {
-		usingSourceSet(sourceSets.authorizationTest)
+	registerFeature("authorizationTestSupport") {
+		usingSourceSet(sourceSets.authorizationTestSupport)
 	}
 }
 
@@ -107,10 +107,10 @@ dependencies {
 	springSupportImplementation "org.springframework:spring-context"
 	springSupportImplementation "org.springframework:spring-test"
 
-	authorizationTestImplementation "org.springframework:spring-webmvc"
-	authorizationTestImplementation "org.springframework:spring-test"
-	authorizationTestImplementation "org.springframework.boot:spring-boot"
-	authorizationTestApi "org.junit.jupiter:junit-jupiter-api"
+	authorizationTestSupportImplementation "org.springframework:spring-webmvc"
+	authorizationTestSupportImplementation "org.springframework:spring-test"
+	authorizationTestSupportImplementation "org.springframework.boot:spring-boot"
+	authorizationTestSupportApi "org.junit.jupiter:junit-jupiter-api"
 
 	testImplementation "org.assertj:assertj-core"
 	testImplementation "org.mockito:mockito-core"

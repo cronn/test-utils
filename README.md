@@ -419,7 +419,7 @@ Gradle:
 ```groovy
 testImplementation("de.cronn:test-utils:{version}") {
     capabilities {
-        requireCapability("de.cronn:test-utils-authorization-test")
+        requireCapability("de.cronn:test-utils-authorization-test-support")
     }
 }
 ```
@@ -431,7 +431,7 @@ Maven:
     <artifactId>test-utils</artifactId>
     <version>{version}</version>
     <scope>test</scope>
-    <classifier>authorization-test</classifier>
+    <classifier>authorization-test-support</classifier>
 </dependency>
 ```
 
