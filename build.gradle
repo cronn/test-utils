@@ -35,7 +35,7 @@ sourceSets {
 	postgresSupport {}
 	hibernateSupport {}
 	springSupport {}
-	jpaQueryCapturing {}
+	jpaQueryCapturingSupport {}
 }
 
 java {
@@ -54,8 +54,8 @@ java {
 	registerFeature("hibernateSupport") {
 		usingSourceSet(sourceSets.hibernateSupport)
 	}
-	registerFeature("jpaQueryCapturing") {
-		usingSourceSet(sourceSets.jpaQueryCapturing)
+	registerFeature("jpaQueryCapturingSupport") {
+		usingSourceSet(sourceSets.jpaQueryCapturingSupport)
 	}
 }
 
@@ -77,12 +77,12 @@ dependencies {
 	implementation "org.apache.commons:commons-lang3"
 	implementation "org.slf4j:slf4j-api"
 
-	jpaQueryCapturingApi "de.cronn:commons-lang:1.4"
-	jpaQueryCapturingApi "de.cronn:validation-file-assertions:0.9.0"
-	jpaQueryCapturingImplementation "net.ttddyy:datasource-proxy:1.10"
-	jpaQueryCapturingImplementation "org.springframework.boot:spring-boot-autoconfigure"
-	jpaQueryCapturingRuntimeOnly "com.github.gavlyukovskiy:datasource-proxy-spring-boot-starter:1.10.0"
-	jpaQueryCapturingCompileOnly "org.hibernate.orm:hibernate-core"
+	jpaQueryCapturingSupportApi "de.cronn:commons-lang:1.4"
+	jpaQueryCapturingSupportApi "de.cronn:validation-file-assertions:0.9.0"
+	jpaQueryCapturingSupportImplementation "net.ttddyy:datasource-proxy:1.10"
+	jpaQueryCapturingSupportImplementation "org.springframework.boot:spring-boot-autoconfigure"
+	jpaQueryCapturingSupportRuntimeOnly "com.github.gavlyukovskiy:datasource-proxy-spring-boot-starter:1.10.0"
+	jpaQueryCapturingSupportCompileOnly "org.hibernate.orm:hibernate-core"
 
 	h2SupportImplementation "org.slf4j:slf4j-api"
 	h2SupportImplementation "org.springframework:spring-beans"

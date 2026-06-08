@@ -260,7 +260,7 @@ Maven:
 </dependency>
 ```
 
-### 🔍 JPA query capturing
+### 🔍 JPA query capturing support
 
 `QueryCaptor` captures the SQL queries and their parameters executed during a test via [datasource-proxy](https://github.com/ttddyy/datasource-proxy). This makes it easy to detect N+1 problems, unexpected lazy loading, or unintended updates. See [hibernate-stop-guessing-start-testing](https://github.com/cronn/hibernate-stop-guessing-start-testing) for a full example and background.
 
@@ -335,7 +335,7 @@ Gradle:
 ```groovy
 testImplementation("de.cronn:test-utils:{version}") {
     capabilities {
-        requireCapability("de.cronn:test-utils-jpa-query-capturing")
+        requireCapability("de.cronn:test-utils-jpa-query-capturing-support")
     }
 }
 ```

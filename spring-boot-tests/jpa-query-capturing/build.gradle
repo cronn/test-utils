@@ -8,7 +8,7 @@ dependencies {
     implementation "org.springframework.boot:spring-boot-starter-data-jpa"
     implementation(project(":")) {
         capabilities {
-            requireCapability("de.cronn:test-utils-jpa-query-capturing")
+            requireCapability("de.cronn:test-utils-jpa-query-capturing-support")
         }
     }
     implementation(project(":")) {
