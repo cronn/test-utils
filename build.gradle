@@ -46,21 +46,27 @@ java {
 
 	registerFeature("h2Support") {
 		usingSourceSet(sourceSets.h2Support)
+	    withSourcesJar()
 	}
 	registerFeature("postgresSupport") {
 		usingSourceSet(sourceSets.postgresSupport)
+	    withSourcesJar()
 	}
 	registerFeature("springSupport") {
 		usingSourceSet(sourceSets.springSupport)
+	    withSourcesJar()
 	}
 	registerFeature("hibernateSupport") {
 		usingSourceSet(sourceSets.hibernateSupport)
+	    withSourcesJar()
 	}
 	registerFeature("jpaQueryCapturingSupport") {
 		usingSourceSet(sourceSets.jpaQueryCapturingSupport)
+	    withSourcesJar()
 	}
 	registerFeature("authorizationTestSupport") {
 		usingSourceSet(sourceSets.authorizationTestSupport)
+	    withSourcesJar()
 	}
 }
 
