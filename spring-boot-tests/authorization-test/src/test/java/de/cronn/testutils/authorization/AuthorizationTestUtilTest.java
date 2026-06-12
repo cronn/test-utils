@@ -32,73 +32,90 @@ class AuthorizationTestUtilTest implements JUnit5ValidationFileAssertions {
 		SimulatedStatusFilter.reset();
 	}
 
-	private String tokenWithNoRoles() {
-		return tokenFactory.tokenForRoles();
+	private BearerTokenCredentials bearerFor(Role role) {
+		String token = tokenFactory.tokenForRoles(role);
+		return new BearerTokenCredentials(role.name(), token);
 	}
 
-	private RoleAndToken roleAndToken(Role role) {
-		return new RoleAndToken(role.name(), tokenFactory.tokenForRoles(role));
+	private List<Credentials> bearerCredentialsFor(Role... roles) {
+		return Arrays.stream(roles).map(r -> (Credentials) bearerFor(r)).toList();
 	}
 
-	private List<RoleAndToken> rolesAndTokensFor(Role... roles) {
-		return Arrays.stream(roles).map(this::roleAndToken).toList();
-	}
+	// --- Bearer-token tests ---
 
 	@Test
 	void buildAuthorizationMatrix_withAllThreeRoles(AuthorizationTestUtil authorizationTestUtil) {
-		List<RoleAndToken> roles = rolesAndTokensFor(Role.ADMIN, Role.USER, Role.GUEST);
+		List<Credentials> credentials = bearerCredentialsFor(Role.ADMIN, Role.USER, Role.GUEST);
+		Credentials authenticated = new BearerTokenCredentials("authenticated", tokenFactory.tokenForRoles());
 
-		String markdown = authorizationTestUtil.buildAuthorizationMatrix(roles, tokenWithNoRoles(), List.of("/regex"));
+		String markdown = authorizationTestUtil.buildAuthorizationMatrix(credentials, authenticated, List.of("/regex"));
 
 		assertWithFile(markdown, FileExtensions.MD);
 	}
 
 	@Test
 	void buildAuthorizationMatrix_withIgnoredActuatorPrefix(AuthorizationTestUtil authorizationTestUtil) {
-		List<RoleAndToken> roles = rolesAndTokensFor(Role.ADMIN, Role.USER, Role.GUEST);
+		List<Credentials> credentials = bearerCredentialsFor(Role.ADMIN, Role.USER, Role.GUEST);
+		Credentials authenticated = new BearerTokenCredentials("authenticated", tokenFactory.tokenForRoles());
 
 		String markdown = authorizationTestUtil.buildAuthorizationMatrix(
-			roles, tokenWithNoRoles(), List.of("/actuator", "/error", "/regex"));
+			credentials, authenticated, List.of("/actuator", "/error", "/regex"));
 
 		assertWithFile(markdown, FileExtensions.MD);
 	}
 
 	@Test
 	void buildAuthorizationMatrix_throwsOnRegexConstrainedPathVariable(AuthorizationTestUtil authorizationTestUtil) {
-		List<RoleAndToken> roles = rolesAndTokensFor(Role.ADMIN);
-
-		assertThatThrownBy(() -> authorizationTestUtil.buildAuthorizationMatrix(roles))
+		assertThatThrownBy(() -> authorizationTestUtil.buildAuthorizationMatrix(bearerCredentialsFor(Role.ADMIN)))
 			.isInstanceOf(IllegalStateException.class)
 			.hasMessageContaining("/regex/{id:[0-9]+}")
 			.hasMessageContaining("regex-constrained variable");
 	}
 
 	@Test
-	void buildAuthorizationMatrix_throwsOnDuplicateRoleNames(AuthorizationTestUtil authorizationTestUtil) {
-		List<RoleAndToken> roles = List.of(
-			new RoleAndToken(Role.ADMIN.name(), tokenFactory.tokenForRoles(Role.ADMIN)),
-			new RoleAndToken(Role.ADMIN.name(), tokenFactory.tokenForRoles(Role.USER)));
+	void buildAuthorizationMatrix_throwsOnDuplicateNames(AuthorizationTestUtil authorizationTestUtil) {
+		String token = tokenFactory.tokenForRoles(Role.USER);
+		String token1 = tokenFactory.tokenForRoles(Role.ADMIN);
+		List<Credentials> credentials = List.of(
+			new BearerTokenCredentials(Role.ADMIN.name(), token1),
+			new BearerTokenCredentials(Role.ADMIN.name(), token),
+			new BasicAuthCredentials(Role.ADMIN.name(), "admin-user", "admin-password"));
 
-		assertThatThrownBy(() -> authorizationTestUtil.buildAuthorizationMatrix(roles))
+		assertThatThrownBy(() -> authorizationTestUtil.buildAuthorizationMatrix(credentials))
 			.isInstanceOf(IllegalArgumentException.class)
-			.hasMessageContaining("Duplicate role name: ADMIN");
+			.hasMessageContaining("Duplicate name: ADMIN");
 	}
 
 	@ParameterizedTest
 	@ValueSource(ints = { 429, 502, 503, 504 })
 	void buildAuthorizationMatrix_throwsOnUnexpectedStatus(int status, AuthorizationTestUtil authorizationTestUtil) {
 		SimulatedStatusFilter.simulateStatus(status);
-		List<RoleAndToken> roles = rolesAndTokensFor(Role.ADMIN);
 
-		assertThatThrownBy(() -> authorizationTestUtil.buildAuthorizationMatrix(roles, List.of("/regex")))
+		assertThatThrownBy(() -> authorizationTestUtil.buildAuthorizationMatrix(bearerCredentialsFor(Role.ADMIN), List.of("/regex")))
 			.isInstanceOf(IllegalStateException.class)
 			.hasMessageContaining(String.valueOf(status));
 	}
 
 	@Test
-	void buildAuthorizationMatrix_throwsOnEmptyRoles(AuthorizationTestUtil authorizationTestUtil) {
+	void buildAuthorizationMatrix_throwsOnEmptyCredentials(AuthorizationTestUtil authorizationTestUtil) {
 		assertThatThrownBy(() -> authorizationTestUtil.buildAuthorizationMatrix(List.of()))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("must not be empty");
+	}
+
+	// --- Mixed bearer + basic auth test ---
+
+	@Test
+	void buildAuthorizationMatrix_withMixedCredentials(AuthorizationTestUtil authorizationTestUtil) {
+		List<Credentials> credentials = List.of(
+			bearerFor(Role.ADMIN),
+			new BasicAuthCredentials(Role.USER.name(), "regular-user", "user-password"),
+			new BasicAuthCredentials(Role.GUEST.name(), "guest-user", "guest-password"));
+		Credentials authenticated = new BasicAuthCredentials("authenticated", "no-role-user", "no-role-password");
+
+		String markdown = authorizationTestUtil.buildAuthorizationMatrix(
+			credentials, authenticated, List.of("/actuator", "/error", "/regex"));
+
+		assertWithFile(markdown, FileExtensions.MD);
 	}
 }

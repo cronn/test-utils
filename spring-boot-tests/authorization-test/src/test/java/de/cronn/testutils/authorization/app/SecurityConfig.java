@@ -13,11 +13,15 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.crypto.factory.PasswordEncoderFactories;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
+import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.AccessDeniedHandler;
@@ -51,12 +55,24 @@ public class SecurityConfig {
 				.requestMatchers("/server-error").hasRole(Role.USER.name())
 				.requestMatchers("/any-method").hasRole(Role.ADMIN.name())
 				.anyRequest().denyAll())
+			.httpBasic(basic -> basic.authenticationEntryPoint(authenticationEntryPoint()))
 			.oauth2ResourceServer(oauth2 -> oauth2
 				.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())))
 			.exceptionHandling(ex -> ex
 				.authenticationEntryPoint(authenticationEntryPoint())
 				.accessDeniedHandler(accessDeniedHandler()));
 		return http.build();
+	}
+
+	@Bean
+	public InMemoryUserDetailsManager userDetailsService() {
+		PasswordEncoder encoder = PasswordEncoderFactories.createDelegatingPasswordEncoder();
+		return new InMemoryUserDetailsManager(
+			User.withUsername("admin-user").password(encoder.encode("admin-password")).roles(Role.ADMIN.name()).build(),
+			User.withUsername("regular-user").password(encoder.encode("user-password")).roles(Role.USER.name()).build(),
+			User.withUsername("guest-user").password(encoder.encode("guest-password")).roles(Role.GUEST.name()).build(),
+			User.withUsername("no-role-user").password(encoder.encode("no-role-password")).roles().build()
+		);
 	}
 
 	@Bean

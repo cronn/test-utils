@@ -360,21 +360,28 @@ This is useful for asserting that each endpoint is reachable by exactly the role
 We recommend to assert the authorization matrix using our [validation-file-assertions] library.
 
 For every endpoint registered in the application's `RequestMappingHandlerMapping`,
-the AuthorizationTestUtil issues one HTTP request per provided role (plus one anonymous request)
+the AuthorizationTestUtil issues one HTTP request per provided principal (plus one anonymous request)
 and records which requests were *not* rejected with `401`/`403`/`405`.
-Endpoints accessible to every provided role render as `{ANY_ROLE}`;
+Endpoints accessible to every provided principal render as `{ANY_ROLE}`;
 anonymously accessible endpoints render as `{UNAUTHENTICATED}`.
 
+Each principal under test is represented by a `Credentials` instance, which carries a **name** (used as the column header in the output matrix) and the credentials sent with each request. Two authentication schemes are supported and may be freely mixed in a single matrix:
 
-Each role under test is represented by a `RoleAndToken`, which pairs:
-- a **role name** — a human-readable label used as the column header in the output matrix (e.g. `"ADMIN"`, `"USER"`)
-- an **access token** — a bearer token (e.g. a JWT or opaque token) sent as `Authorization: Bearer <token>` when probing endpoints for that role
+- `new BearerTokenCredentials("ADMIN", token)` — sends `Authorization: Bearer <token>` (e.g. a JWT or opaque token)
+- `new BasicAuthCredentials("USER", "alice", "s3cret")` — sends `Authorization: Basic <base64(username:password)>`
 
-You are responsible for obtaining these tokens before the test runs.
+To support other authentication schemes, implement the `Credentials` interface providing a `name()` and an `applyTo(HttpHeaders, HttpMethod, URI)` method that writes the appropriate headers.
+
+You are responsible for obtaining tokens / configuring users before the test runs.
 
 > [!IMPORTANT]
-> Each token must grant **only the permissions of the single role** it represents.
-> A token that bundles multiple roles (e.g. both `ADMIN` and `USER`) will show access for both roles simultaneously, making it impossible to tell which role actually grants access to a given endpoint.
+> Each `Credentials` instance must grant **only the permissions of the single principal** it represents.
+> - For bearer tokens: do not bundle multiple roles in one token.
+> - For basic auth: configure the user account on the server with exactly one role.
+>
+> Mixing multiple roles in one credential set makes it impossible to tell which role actually grants access to a given endpoint.
+
+An optional `authenticatedCredentials` parameter lets you probe endpoints that require authentication but no specific role (renders as `{AUTHENTICATED}` in the matrix). Pass any credentials for a user or token that is authenticated but holds no roles — this works for both bearer tokens and basic auth.
 
 The easiest way to use `AuthorizationTestUtil` is via the provided JUnit 5 extension,
 which wires up the utility automatically from the Spring application context:
@@ -386,11 +393,12 @@ class MyAuthorizationTest implements JUnit5ValidationFileAssertions {
 
     @Test
     void authorizationMatrix(AuthorizationTestUtil authorizationTestUtil) {
-        List<RoleAndToken> roles = List.of(
-            new RoleAndToken("ADMIN", adminToken),
-            new RoleAndToken("USER",  userToken));
+        List<Credentials> credentials = List.of(
+            new BearerTokenCredentials("ADMIN", adminToken),
+            new BasicAuthCredentials("USER", "alice", "s3cret"));
+        Credentials authenticated = new BearerTokenCredentials("authenticated", noRolesToken);
         String markdown = authorizationTestUtil.buildAuthorizationMatrix(
-            roles, List.of("/ignored-endpoint-prefix"));
+            credentials, authenticated, List.of("/ignored-endpoint-prefix"));
         assertWithFile(markdown, FileExtensions.MD);
     }
 }
@@ -406,20 +414,21 @@ class MyAuthorizationTest implements JUnit5ValidationFileAssertions {
 
     @LocalServerPort
     int port;
-    
+
     @Autowired
-    @Qualifier("requestMappingHandlerMapping") 
+    @Qualifier("requestMappingHandlerMapping")
     RequestMappingHandlerMapping handlerMapping;
 
     @Test
     void authorizationMatrix() {
         AuthorizationTestUtil authorizationTestUtil =
                 new AuthorizationTestUtil(handlerMapping, AuthorizationTestUtil.createRestClient(port));
-        List<RoleAndToken> roles = List.of(
-                new RoleAndToken("ADMIN", adminToken),
-                new RoleAndToken("USER", userToken));
+        List<Credentials> credentials = List.of(
+                new BearerTokenCredentials("ADMIN", adminToken),
+                new BasicAuthCredentials("USER", "alice", "s3cret"));
+        Credentials authenticated = new BearerTokenCredentials("authenticated", noRolesToken);
         String markdown = authorizationTestUtil.buildAuthorizationMatrix(
-                roles, List.of("/ignored-endpoint-prefix"));
+                credentials, authenticated, List.of("/ignored-endpoint-prefix"));
         assertWithFile(markdown, FileExtensions.MD);
     }
 }
@@ -446,7 +455,7 @@ Maven:
 ```
 
 > [!WARNING]
-> This feature only supports Spring MVC with bearer-token authentication — WebFlux, form login, session cookies, basic auth, mTLS etc. are not supported.
+> This feature only supports Spring MVC with bearer-token or HTTP Basic authentication — WebFlux, form login, session cookies, mTLS etc. are not supported.
 > 
 > Be aware of the following additional constraints:
 > - Path variables are replaced with a fixed placeholder:
