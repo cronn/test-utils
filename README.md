@@ -366,6 +366,16 @@ Endpoints accessible to every provided role render as `{ANY_ROLE}`;
 anonymously accessible endpoints render as `{UNAUTHENTICATED}`.
 
 
+Each role under test is represented by a `RoleAndToken`, which pairs:
+- a **role name** — a human-readable label used as the column header in the output matrix (e.g. `"ADMIN"`, `"USER"`)
+- an **access token** — a bearer token (e.g. a JWT or opaque token) sent as `Authorization: Bearer <token>` when probing endpoints for that role
+
+You are responsible for obtaining these tokens before the test runs.
+
+> [!IMPORTANT]
+> Each token must grant **only the permissions of the single role** it represents.
+> A token that bundles multiple roles (e.g. both `ADMIN` and `USER`) will show access for both roles simultaneously, making it impossible to tell which role actually grants access to a given endpoint.
+
 The easiest way to use `AuthorizationTestUtil` is via the provided JUnit 5 extension,
 which wires up the utility automatically from the Spring application context:
 
