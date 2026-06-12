@@ -1,8 +1,10 @@
 package de.cronn.testutils.authorization;
 
+import java.net.URI;
 import java.util.Objects;
 
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 
 /**
  * Creates HTTP Basic credentials sent as {@code Authorization: Basic <base64(username:password)>}.
@@ -23,7 +25,7 @@ public record BasicAuthCredentials(String name, String username, String password
 	}
 
 	@Override
-	public void applyTo(HttpHeaders headers) {
+	public void applyTo(HttpHeaders headers, HttpMethod method, URI uri) {
 		headers.setBasicAuth(username, password);
 	}
 }

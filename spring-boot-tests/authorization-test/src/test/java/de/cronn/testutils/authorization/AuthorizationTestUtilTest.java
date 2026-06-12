@@ -15,6 +15,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 import de.cronn.assertions.validationfile.FileExtensions;
 import de.cronn.assertions.validationfile.junit5.JUnit5ValidationFileAssertions;
+import de.cronn.testutils.authorization.app.DPoPTestProofFactory;
 import de.cronn.testutils.authorization.app.JwtTestTokenFactory;
 import de.cronn.testutils.authorization.app.Role;
 import de.cronn.testutils.authorization.app.SimulatedStatusFilter;
@@ -103,14 +104,35 @@ class AuthorizationTestUtilTest implements JUnit5ValidationFileAssertions {
 			.hasMessageContaining("must not be empty");
 	}
 
-	// --- Mixed bearer + basic auth test ---
+	@Test
+	void buildAuthorizationMatrix_withDPoPCredentials(AuthorizationTestUtil authorizationTestUtil) {
+		DPoPTestProofFactory adminProofFactory = new DPoPTestProofFactory();
+		DPoPTestProofFactory userProofFactory = new DPoPTestProofFactory();
+		DPoPTestProofFactory noRoleProofFactory = new DPoPTestProofFactory();
+
+		String accessToken1 = tokenFactory.tokenForRoles(userProofFactory.jwkThumbprint(), Role.USER);
+		String accessToken2 = tokenFactory.tokenForRoles(adminProofFactory.jwkThumbprint(), Role.ADMIN);
+		List<Credentials> credentials = List.of(
+			new DPoPCredentials(Role.ADMIN.name(), accessToken2, adminProofFactory),
+			new DPoPCredentials(Role.USER.name(), accessToken1, userProofFactory));
+		String accessToken = tokenFactory.tokenForRoles(noRoleProofFactory.jwkThumbprint());
+		Credentials authenticated = new DPoPCredentials("authenticated", accessToken, noRoleProofFactory);
+
+		String markdown = authorizationTestUtil.buildAuthorizationMatrix(
+			credentials, authenticated, List.of("/actuator", "/error", "/regex"));
+
+		assertWithFile(markdown, FileExtensions.MD);
+	}
 
 	@Test
 	void buildAuthorizationMatrix_withMixedCredentials(AuthorizationTestUtil authorizationTestUtil) {
+		DPoPTestProofFactory guestProofFactory = new DPoPTestProofFactory();
+
+		String accessToken = tokenFactory.tokenForRoles(guestProofFactory.jwkThumbprint(), Role.GUEST);
 		List<Credentials> credentials = List.of(
 			bearerFor(Role.ADMIN),
 			new BasicAuthCredentials(Role.USER.name(), "regular-user", "user-password"),
-			new BasicAuthCredentials(Role.GUEST.name(), "guest-user", "guest-password"));
+			new DPoPCredentials(Role.GUEST.name(), accessToken, guestProofFactory));
 		Credentials authenticated = new BasicAuthCredentials("authenticated", "no-role-user", "no-role-password");
 
 		String markdown = authorizationTestUtil.buildAuthorizationMatrix(

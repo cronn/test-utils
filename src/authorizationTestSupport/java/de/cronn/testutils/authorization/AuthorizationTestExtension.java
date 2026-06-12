@@ -46,6 +46,7 @@ public class AuthorizationTestExtension implements ParameterResolver {
 		RequestMappingHandlerMapping requestMappingHandlerMapping =
 			servletWebServerApplicationContext.getBean("requestMappingHandlerMapping", RequestMappingHandlerMapping.class);
 		int localServerPort = servletWebServerApplicationContext.getWebServer().getPort();
-		return new AuthorizationTestUtil(requestMappingHandlerMapping, AuthorizationTestUtil.createRestClient(localServerPort));
+		String baseUrl = "http://localhost:" + localServerPort;
+		return new AuthorizationTestUtil(requestMappingHandlerMapping, AuthorizationTestUtil.createRestClient(baseUrl), baseUrl);
 	}
 }
