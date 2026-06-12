@@ -32,16 +32,22 @@ public class JwtTestTokenFactory {
 	}
 
 	public String tokenForRoles(Role... roles) {
+		return tokenForRoles(null, roles);
+	}
+
+	public String tokenForRoles(String jwkThumbprint, Role... roles) {
 		List<String> roleNames = Arrays.stream(roles).map(Role::name).toList();
 		Instant now = Instant.now();
-		JwtClaimsSet claims = JwtClaimsSet.builder()
+		JwtClaimsSet.Builder claimsBuilder = JwtClaimsSet.builder()
 			.issuer("test-issuer")
 			.subject("test-subject-" + UUID.randomUUID())
 			.issuedAt(now)
 			.expiresAt(now.plus(1, ChronoUnit.HOURS))
-			.claim("roles", roleNames)
-			.build();
+			.claim("roles", roleNames);
+		if (jwkThumbprint != null) {
+			claimsBuilder.claim("cnf", java.util.Map.of("jkt", jwkThumbprint));
+		}
 		JwsHeader header = JwsHeader.with(() -> JwsAlgorithms.RS256).build();
-		return encoder.encode(JwtEncoderParameters.from(header, claims)).getTokenValue();
+		return encoder.encode(JwtEncoderParameters.from(header, claimsBuilder.build())).getTokenValue();
 	}
 }

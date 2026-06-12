@@ -365,10 +365,11 @@ and records which requests were *not* rejected with `401`/`403`/`405`.
 Endpoints accessible to every provided principal render as `{ANY_ROLE}`;
 anonymously accessible endpoints render as `{UNAUTHENTICATED}`.
 
-Each principal under test is represented by a `Credentials` instance, which carries a **name** (used as the column header in the output matrix) and the credentials sent with each request. Two authentication schemes are supported and may be freely mixed in a single matrix:
+Each principal under test is represented by a `Credentials` instance, which carries a **name** (used in the output matrix) and the credentials sent with each request. Three authentication schemes are supported and may be freely mixed in a single matrix:
 
 - `new BearerTokenCredentials("ADMIN", token)` — sends `Authorization: Bearer <token>` (e.g. a JWT or opaque token)
 - `new BasicAuthCredentials("USER", "alice", "s3cret")` — sends `Authorization: Basic <base64(username:password)>`
+- `new DPoPCredentials("GUEST", accessToken, proofFactory)` — sends `Authorization: DPoP <token>` plus a fresh per-request `DPoP` proof header (RFC 9449); the supplied [`DPoPProofFactory`](#dpop) generates the signed proof JWT for each request
 
 To support other authentication schemes, implement the `Credentials` interface providing a `name()` and an `applyTo(HttpHeaders, HttpMethod, URI)` method that writes the appropriate headers.
 
@@ -378,10 +379,11 @@ You are responsible for obtaining tokens / configuring users before the test run
 > Each `Credentials` instance must grant **only the permissions of the single principal** it represents.
 > - For bearer tokens: do not bundle multiple roles in one token.
 > - For basic auth: configure the user account on the server with exactly one role.
+> - For DPoP: mint the access token with a single role and bind it to one key pair via the `cnf.jkt` claim.
 >
 > Mixing multiple roles in one credential set makes it impossible to tell which role actually grants access to a given endpoint.
 
-An optional `authenticatedCredentials` parameter lets you probe endpoints that require authentication but no specific role (renders as `{AUTHENTICATED}` in the matrix). Pass any credentials for a user or token that is authenticated but holds no roles — this works for both bearer tokens and basic auth.
+An optional `authenticatedCredentials` parameter lets you probe endpoints that require authentication but no specific role (renders as `{AUTHENTICATED}` in the matrix). Pass any credentials for a user or token that is authenticated but holds no roles — this works for all three authentication schemes.
 
 The easiest way to use `AuthorizationTestUtil` is via the provided JUnit 5 extension,
 which wires up the utility automatically from the Spring application context:
@@ -431,6 +433,19 @@ class MyAuthorizationTest implements JUnit5ValidationFileAssertions {
                 credentials, authenticated, List.of("/ignored-endpoint-prefix"));
         assertWithFile(markdown, FileExtensions.MD);
     }
+
+    @Test
+    void authorizationMatrixWithDPoP() {
+        String baseUrl = AuthorizationTestUtil.localBaseUrl(port);
+        AuthorizationTestUtil authorizationTestUtil =
+                new AuthorizationTestUtil(handlerMapping, AuthorizationTestUtil.createRestClient(baseUrl), baseUrl);
+        List<Credentials> credentials = List.of(
+                new BearerTokenCredentials("ADMIN", adminToken),
+                new DPoPCredentials("USER", userAccessToken, userProofFactory));
+        String markdown = authorizationTestUtil.buildAuthorizationMatrix(
+                credentials, List.of("/ignored-endpoint-prefix"));
+        assertWithFile(markdown, FileExtensions.MD);
+    }
 }
 ```
 
@@ -454,8 +469,22 @@ Maven:
 </dependency>
 ```
 
+#### DPoP
+
+`DPoPCredentials` supports [RFC 9449](https://datatracker.ietf.org/doc/html/rfc9449) DPoP-bound access tokens. Because the DPoP proof must bind to the exact HTTP method and URI of each request, it cannot be pre-computed. The `DPoPProofFactory` functional interface is called once per request:
+
+```java
+// Implement DPoPProofFactory to generate a fresh signed proof for each request:
+DPoPProofFactory proofFactory = (method, uri, accessToken) ->
+    myDPoPSigner.sign(method.name(), uri.toString(), accessToken);
+
+Credentials dpopAdmin = new DPoPCredentials("ADMIN", adminAccessToken, proofFactory);
+```
+
+The access token must be bound to the client's key pair via a `cnf.jkt` claim (SHA-256 JWK thumbprint of the public key) as required by RFC 9449. The proof JWT must include `htm`, `htu`, `ath` (SHA-256 hash of the access token), `jti`, and `iat` claims.
+
 > [!WARNING]
-> This feature only supports Spring MVC with bearer-token or HTTP Basic authentication — WebFlux, form login, session cookies, mTLS etc. are not supported.
+> This feature only supports Spring MVC with bearer-token, HTTP Basic, or DPoP authentication — WebFlux, form login, session cookies, mTLS etc. are not supported.
 > 
 > Be aware of the following additional constraints:
 > - Path variables are replaced with a fixed placeholder:

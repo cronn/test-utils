@@ -1,8 +1,10 @@
 package de.cronn.testutils.authorization;
 
+import java.net.URI;
 import java.util.Objects;
 
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 
 /**
  * Creates bearer-token credentials sent as {@code Authorization: Bearer <token>}.
@@ -18,7 +20,7 @@ public record BearerTokenCredentials(String name, String token) implements Crede
 	}
 
 	@Override
-	public void applyTo(HttpHeaders headers) {
+	public void applyTo(HttpHeaders headers, HttpMethod method, URI uri) {
 		headers.setBearerAuth(token);
 	}
 }

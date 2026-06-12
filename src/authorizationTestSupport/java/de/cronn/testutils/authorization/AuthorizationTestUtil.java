@@ -1,6 +1,7 @@
 package de.cronn.testutils.authorization;
 
 
+import java.net.URI;
 import java.net.http.HttpClient;
 import java.time.Duration;
 import java.util.Comparator;
@@ -34,7 +35,12 @@ import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandl
  * <p>The recommended way to obtain an instance is via {@link AuthorizationTestExtension}.
  * For custom adaptations, construct the instance directly:
  * <pre>{@code
+ * // bearer / basic auth only:
  * new AuthorizationTestUtil(handlerMapping, AuthorizationTestUtil.createRestClient(localServerPort))
+ *
+ * // with DPoP support:
+ * String baseUrl = AuthorizationTestUtil.localBaseUrl(localServerPort);
+ * new AuthorizationTestUtil(handlerMapping, AuthorizationTestUtil.createRestClient(baseUrl), baseUrl)
  * }</pre>
  */
 public final class AuthorizationTestUtil {
@@ -49,17 +55,41 @@ public final class AuthorizationTestUtil {
 
 	private final RequestMappingHandlerMapping handlerMapping;
 	private final RestClient restClient;
+	@Nullable
+	private final String baseUrl;
 
 	/**
 	 * Create a util for authorization testing.
+	 *
+	 * <p>Sufficient for bearer-token and HTTP Basic authentication. If you intend to use
+	 * {@link DPoPCredentials}, use
+	 * {@link #AuthorizationTestUtil(RequestMappingHandlerMapping, RestClient, String)} instead
+	 * so that full absolute URIs can be constructed for DPoP proof generation.
 	 *
 	 * @param handlerMapping the {@link RequestMappingHandlerMapping} bean of the application
 	 * @param restClient     {@link RestClient} configured against the running application
 	 *                       (must have a base URL set, or paths must resolve absolutely)
 	 */
 	public AuthorizationTestUtil(RequestMappingHandlerMapping handlerMapping, RestClient restClient) {
+		this(handlerMapping, restClient, null);
+	}
+
+	/**
+	 * Create a util for authorization testing, with an explicit base URL for DPoP proof generation.
+	 *
+	 * <p>Required when using {@link DPoPCredentials}. For bearer-token and
+	 * HTTP Basic authentication the two-argument constructor is sufficient.
+	 *
+	 * @param handlerMapping the {@link RequestMappingHandlerMapping} bean of the application
+	 * @param restClient     {@link RestClient} configured against the running application
+	 *                       (must have a base URL set, or paths must resolve absolutely)
+	 * @param baseUrl        the base URL of the running application (e.g. {@code "http://localhost:8080"}),
+	 *                       used to construct full absolute URIs for DPoP proof generation
+	 */
+	public AuthorizationTestUtil(RequestMappingHandlerMapping handlerMapping, RestClient restClient, String baseUrl) {
 		this.handlerMapping = handlerMapping;
 		this.restClient = restClient;
+		this.baseUrl = baseUrl;
 	}
 
 	/**
@@ -103,7 +133,7 @@ public final class AuthorizationTestUtil {
 
 		validateCredentials(credentials);
 		List<Endpoint> endpoints = discoverEndpoints(handlerMapping, ignoredPathPrefixes);
-		List<EndpointResult> results = testEndpoints(restClient, endpoints, credentials, authenticatedCredentials);
+		List<EndpointResult> results = testEndpoints(restClient, baseUrl, endpoints, credentials, authenticatedCredentials);
 		return renderMarkdown(results, allNames(credentials));
 	}
 
@@ -130,11 +160,22 @@ public final class AuthorizationTestUtil {
 	 * Like {@link #createRestClient(String)} but targets {@code http://localhost:<localServerPort>}
 	 * — convenient for use with {@code @LocalServerPort}.
 	 *
-	 * @param localServerPort of the application
+	 * @param localServerPort the port of the running application
 	 * @return a rest client that can be used for authorization tests
 	 */
 	public static RestClient createRestClient(int localServerPort) {
-		return createRestClient("http://localhost:" + localServerPort);
+		return createRestClient(localBaseUrl(localServerPort));
+	}
+
+	/**
+	 * Returns the base URL for the given local server port: {@code http://localhost:<localServerPort>}.
+	 * Needed when constructing {@link AuthorizationTestUtil} with DPoP support.
+	 *
+	 * @param localServerPort the port of the running application
+	 * @return the base URL string
+	 */
+	public static String localBaseUrl(int localServerPort) {
+		return "http://localhost:" + localServerPort;
 	}
 
 	private static void validateCredentials(List<Credentials> credentials) {
@@ -204,57 +245,61 @@ public final class AuthorizationTestUtil {
 
 	private static List<EndpointResult> testEndpoints(
 		RestClient restClient,
+		String baseUrl,
 		List<Endpoint> endpoints,
 		List<Credentials> credentials,
 		@Nullable Credentials authenticatedCredentials) {
 
 		return endpoints.stream()
-			.map(endpoint -> testEndpoint(restClient, endpoint, credentials, authenticatedCredentials))
+			.map(endpoint -> testEndpoint(restClient, baseUrl, endpoint, credentials, authenticatedCredentials))
 			.toList();
 	}
 
 	private static EndpointResult testEndpoint(
 		RestClient restClient,
+		String baseUrl,
 		Endpoint endpoint,
 		List<Credentials> credentials,
 		@Nullable Credentials authenticatedCredentials) {
 
-		if (isUnauthenticatedAllowed(restClient, endpoint)) {
+		if (isUnauthenticatedAllowed(restClient, baseUrl, endpoint)) {
 			return new EndpointResult(endpoint, List.of(), true, null);
 		}
-		Boolean authenticatedAllowed = checkAuthenticatedAccess(restClient, endpoint, authenticatedCredentials);
+		Boolean authenticatedAllowed = checkAuthenticatedAccess(restClient, baseUrl, endpoint, authenticatedCredentials);
 		if (Boolean.TRUE.equals(authenticatedAllowed)) {
 			return new EndpointResult(endpoint, List.of(), false, true);
 		}
-		return new EndpointResult(endpoint, checkAccess(restClient, endpoint, credentials), false, authenticatedAllowed);
+		return new EndpointResult(endpoint, checkAccess(restClient, baseUrl, endpoint, credentials), false, authenticatedAllowed);
 	}
 
-	private static boolean isUnauthenticatedAllowed(RestClient restClient, Endpoint endpoint) {
-		return isAllowed(callEndpoint(restClient, endpoint, null));
+	private static boolean isUnauthenticatedAllowed(RestClient restClient, String baseUrl, Endpoint endpoint) {
+		return isAllowed(callEndpoint(restClient, baseUrl, endpoint, null));
 	}
 
 	@Nullable
-	private static Boolean checkAuthenticatedAccess(RestClient restClient, Endpoint endpoint, @Nullable Credentials authenticatedCredentials) {
+	private static Boolean checkAuthenticatedAccess(RestClient restClient, String baseUrl, Endpoint endpoint, @Nullable Credentials authenticatedCredentials) {
 		if (authenticatedCredentials == null) {
 			return null;
 		}
-		return isAllowed(callEndpoint(restClient, endpoint, authenticatedCredentials));
+		return isAllowed(callEndpoint(restClient, baseUrl, endpoint, authenticatedCredentials));
 	}
 
-	private static List<String> checkAccess(RestClient restClient, Endpoint endpoint, List<Credentials> credentials) {
+	private static List<String> checkAccess(RestClient restClient, String baseUrl, Endpoint endpoint, List<Credentials> credentials) {
 		return credentials.stream()
-			.filter(c -> isAllowed(callEndpoint(restClient, endpoint, c)))
+			.filter(c -> isAllowed(callEndpoint(restClient, baseUrl, endpoint, c)))
 			.map(Credentials::name)
 			.toList();
 	}
 
 	private static HttpStatusCode callEndpoint(
-		RestClient restClient, Endpoint endpoint, @Nullable Credentials credentials) {
+		RestClient restClient, @Nullable String baseUrl, Endpoint endpoint, @Nullable Credentials credentials) {
+		String encodedPath = encodePathForRequest(endpoint.path());
 		return restClient.method(endpoint.method())
-			.uri(encodePathForRequest(endpoint.path()))
+			.uri(encodedPath)
 			.headers(headers -> {
 				if (credentials != null) {
-					credentials.applyTo(headers);
+					URI uri = resolveUri(baseUrl, encodedPath, credentials);
+					credentials.applyTo(headers, endpoint.method(), uri);
 				}
 			})
 			.retrieve()
@@ -262,6 +307,18 @@ public final class AuthorizationTestUtil {
 			})
 			.toBodilessEntity()
 			.getStatusCode();
+	}
+
+	private static URI resolveUri(@Nullable String baseUrl, String encodedPath, Credentials credentials) {
+		if (credentials instanceof DPoPCredentials) {
+			if (baseUrl == null) {
+				throw new IllegalStateException(
+					"baseUrl is required when using DPoP credentials. Use AuthorizationTestUtil(handlerMapping, restClient, baseUrl) to provide it."
+				);
+			}
+			return URI.create(baseUrl + encodedPath);
+		}
+		return URI.create(encodedPath);
 	}
 
 	private static boolean isAllowed(HttpStatusCode statusCode) {
