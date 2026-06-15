@@ -12,7 +12,7 @@ import net.ttddyy.dsproxy.listener.logging.QueryLogEntryCreator;
 	HibernateSqlQueryFormatterConfig.class,
 	NoOpSqlFormatterConfig.class
 })
-class QueryCaptorAutoConfiguration {
+public class QueryCaptorAutoConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean // let users define their own implementation
