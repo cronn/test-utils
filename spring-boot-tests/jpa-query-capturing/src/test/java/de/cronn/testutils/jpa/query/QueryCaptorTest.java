@@ -34,27 +34,25 @@ class QueryCaptorTest extends BaseIntegrationTest {
 		List<String> captured = queryCapturing.getCapturedQueries();
 		assertThat(captured).containsExactly(
 			"""
-				Name:dataSource, Isolation:NONE, Success:True
-				Type:Prepared, Batch:False, QuerySize:1, BatchSize:0
-				Query:["
+				-- Name:dataSource, Isolation:NONE, Success:True
+				-- Type:Prepared, Batch:False, QuerySize:1, BatchSize:0
+				-- Params:[(1)]
 				    select
 				        se1_0.id\s
 				    from
 				        sample_entity se1_0\s
 				    where
-				        se1_0.id=?"]
-				Params:[(1)]""",
+				        se1_0.id=?;""",
 			"""
-				Name:dataSource, Isolation:NONE, Success:True
-				Type:Prepared, Batch:False, QuerySize:1, BatchSize:0
-				Query:["
+				-- Name:dataSource, Isolation:NONE, Success:True
+				-- Type:Prepared, Batch:False, QuerySize:1, BatchSize:0
+				-- Params:[(2)]
 				    select
 				        se1_0.id\s
 				    from
 				        sample_entity se1_0\s
 				    where
-				        se1_0.id=?"]
-				Params:[(2)]"""
+				        se1_0.id=?;"""
 		);
 	}
 

@@ -1,0 +1,24 @@
+-- Name:dataSource, Isolation:NONE, Success:True
+-- Type:Prepared, Batch:False, QuerySize:1, BatchSize:0
+-- Params:[(1)]
+    select
+        se1_0.id 
+    from
+        sample_entity se1_0 
+    where
+        se1_0.id=?;
+
+
+-- Name:dataSource, Isolation:NONE, Success:True
+-- Type:Prepared, Batch:False, QuerySize:1, BatchSize:0
+-- Params:[(1)]
+    select
+        c1_0.parent_id,
+        c1_0.id,
+        c1_0.name 
+    from
+        child_entity c1_0 
+    where
+        c1_0.parent_id=? 
+    order by
+        c1_0.id;

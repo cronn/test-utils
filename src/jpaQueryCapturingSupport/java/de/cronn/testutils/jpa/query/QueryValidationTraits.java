@@ -2,13 +2,12 @@ package de.cronn.testutils.jpa.query;
 
 import java.util.concurrent.Callable;
 
+import de.cronn.assertions.validationfile.FileExtensions;
 import de.cronn.assertions.validationfile.junit5.JUnit5ValidationFileAssertions;
 import de.cronn.assertions.validationfile.normalization.ValidationNormalizer;
 import de.cronn.commons.lang.Action;
 
 public interface QueryValidationTraits extends JUnit5ValidationFileAssertions {
-
-	String SUFFIX_SQL = "sql";
 
 	QueryCaptor getQueryCaptor();
 
@@ -17,7 +16,7 @@ public interface QueryValidationTraits extends JUnit5ValidationFileAssertions {
 	}
 
 	default <T> T captureQueryAndCompareWithFile(Callable<T> callable) {
-		return captureQueryAndCompareWithFile(callable, SUFFIX_SQL);
+		return captureQueryAndCompareWithFile(callable, defaultValidationNormalizerForQueryCaptor());
 	}
 
 	default void captureQueryAndCompareWithFile(Action action, String suffix) {
@@ -35,7 +34,7 @@ public interface QueryValidationTraits extends JUnit5ValidationFileAssertions {
 
 	default <T> T captureQueryAndCompareWithFile(
 		Callable<T> callable, ValidationNormalizer normalizer) {
-		return captureQueryAndCompareWithFile(callable, normalizer, SUFFIX_SQL);
+		return captureQueryAndCompareWithFile(callable, normalizer, "");
 	}
 
 	default <T> T captureQueryAndCompareWithFile(Callable<T> callable, String suffix) {
@@ -53,7 +52,7 @@ public interface QueryValidationTraits extends JUnit5ValidationFileAssertions {
 		try {
 			T result = queryListener.captureQueriesDuring(callable);
 			String capturedQueries = String.join("\n\n\n", queryListener.getCapturedQueries());
-			assertWithFileWithSuffix(capturedQueries, normalizer, suffix);
+			assertWithFileWithSuffix(capturedQueries, normalizer, suffix, FileExtensions.SQL);
 			return result;
 		} catch (Exception e) {
 			throw new RuntimeException(e);
