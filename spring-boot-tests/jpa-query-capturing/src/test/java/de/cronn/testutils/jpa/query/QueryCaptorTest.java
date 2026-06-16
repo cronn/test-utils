@@ -31,28 +31,30 @@ class QueryCaptorTest extends BaseIntegrationTest {
 			transactionTemplate.executeWithoutResult(tx -> entityManager.find(SampleEntity.class, 2L));
 		});
 
-		List<String> captured = queryCapturing.getCapturedQueries();
-		assertThat(captured).containsExactly(
+		List<String> capturedQueries = queryCapturing.getCapturedQueries();
+		assertThat(capturedQueries).containsExactly(
 			"""
-				-- Name:dataSource, Isolation:NONE, Success:True
-				-- Type:Prepared, Batch:False, QuerySize:1, BatchSize:0
-				-- Params:[(1)]
-				    select
-				        se1_0.id\s
-				    from
-				        sample_entity se1_0\s
-				    where
-				        se1_0.id=?;""",
+				-- Name: dataSource, Isolation: NONE, Success: True
+				-- Type: Prepared, QuerySize: 1, Batch: False
+
+				select
+				    se1_0.id
+				from
+				    sample_entity se1_0
+				where
+				    se1_0.id=?;
+				-- Params: (1)""",
 			"""
-				-- Name:dataSource, Isolation:NONE, Success:True
-				-- Type:Prepared, Batch:False, QuerySize:1, BatchSize:0
-				-- Params:[(2)]
-				    select
-				        se1_0.id\s
-				    from
-				        sample_entity se1_0\s
-				    where
-				        se1_0.id=?;"""
+				-- Name: dataSource, Isolation: NONE, Success: True
+				-- Type: Prepared, QuerySize: 1, Batch: False
+
+				select
+				    se1_0.id
+				from
+				    sample_entity se1_0
+				where
+				    se1_0.id=?;
+				-- Params: (2)"""
 		);
 	}
 
@@ -79,7 +81,8 @@ class QueryCaptorTest extends BaseIntegrationTest {
 	void throwsOnNestedCapturing() {
 		assertThatThrownBy(() ->
 			queryCapturing.captureQueriesDuring(() ->
-				queryCapturing.captureQueriesDuring(() -> {})
+				queryCapturing.captureQueriesDuring(() -> {
+				})
 			)
 		).isInstanceOf(IllegalStateException.class)
 			.hasMessageContaining("nested capturing is not supported");
