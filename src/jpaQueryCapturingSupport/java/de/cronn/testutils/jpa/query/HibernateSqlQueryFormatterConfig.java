@@ -15,7 +15,7 @@ class HibernateSqlQueryFormatterConfig {
 	@ConditionalOnMissingBean // let users define their own
 	public SqlQueryFormatter sqlQueryFormatter() {
 		Formatter formatter = FormatStyle.BASIC.getFormatter();
-		return formatter::format;
+		return source -> formatter.format(source).stripIndent();
 	}
 
 }

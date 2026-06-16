@@ -1,12 +1,16 @@
 package de.cronn.testutils.jpa.query;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import net.ttddyy.dsproxy.ExecutionInfo;
 import net.ttddyy.dsproxy.QueryInfo;
-import net.ttddyy.dsproxy.listener.logging.DefaultQueryLogEntryCreator;
+import net.ttddyy.dsproxy.StatementType;
+import net.ttddyy.dsproxy.listener.logging.AbstractQueryLogEntryCreator;
+import net.ttddyy.dsproxy.proxy.ParameterSetOperation;
 
-public class FormattingQueryLogEntryCreator extends DefaultQueryLogEntryCreator {
+public class FormattingQueryLogEntryCreator extends AbstractQueryLogEntryCreator {
 
 	private static final String LINE_SEPARATOR = System.lineSeparator();
 
@@ -17,61 +21,71 @@ public class FormattingQueryLogEntryCreator extends DefaultQueryLogEntryCreator 
 	}
 
 	@Override
-	public String getLogEntry(ExecutionInfo execInfo, List<QueryInfo> queryInfoList, boolean writeDataSourceName, boolean writeConnectionId, boolean writeIsolation) {
-		final StringBuilder sb = new StringBuilder();
+	public String getLogEntry(ExecutionInfo execInfo, List<QueryInfo> queries, boolean writeDataSourceName, boolean writeConnectionId, boolean writeIsolation) {
+		List<String> lines = new ArrayList<>();
 
-		sb.append(LINE_SEPARATOR);
-		sb.append("-- ");
+		lines.add(formatMetadata(execInfo, queries));
 
-		if (writeDataSourceName) {
-			writeDataSourceNameEntry(sb, execInfo, queryInfoList);
+		for (QueryInfo query : queries) {
+			lines.add(formatQuery(execInfo, query));
 		}
 
-		if (writeConnectionId) {
-			writeConnectionIdEntry(sb, execInfo, queryInfoList);
+		return String.join(LINE_SEPARATOR, lines);
+	}
+
+	private String formatQuery(ExecutionInfo executionInfo, QueryInfo query) {
+		List<String> lines = new ArrayList<>();
+		String formattedQuery = sqlQueryFormatter.format(query.getQuery());
+		lines.add(addSuffixIfMissing(formattedQuery, ";"));
+
+		List<String> formattedParameters = new ArrayList<>();
+		for (List<ParameterSetOperation> parameters : query.getParametersList()) {
+			if (!parameters.isEmpty()) {
+				formattedParameters.add(parameters.stream()
+					.map(param -> formatParams(executionInfo, param))
+					.collect(Collectors.joining(", ", "(", ")")));
+			}
 		}
 
-		if (writeIsolation) {
-			writeIsolationEntry(sb, execInfo, queryInfoList);
+		if (!formattedParameters.isEmpty()) {
+			lines.add(formattedParameters.stream()
+				.collect(Collectors.joining(LINE_SEPARATOR + "--         ", "-- Params: ", "")));
 		}
 
-		writeResultEntry(sb, execInfo, queryInfoList);
+		return String.join(LINE_SEPARATOR, lines);
+	}
 
-		sb.delete(sb.length() - 2, sb.length());  // delete last ", "
+	private static String addSuffixIfMissing(String value, String suffix) {
+		if (!value.stripTrailing().endsWith(suffix)) {
+			return value + suffix;
+		} else {
+			return value;
+		}
+	}
+
+	private String formatMetadata(ExecutionInfo execInfo, List<QueryInfo> queryInfos) {
+		String name = execInfo.getDataSourceName();
+		StringBuilder sb = new StringBuilder();
+		sb.append("-- Name: ").append(name == null ? "" : name);
+		sb.append(", Isolation: ").append(getTransactionIsolation(execInfo.getIsolationLevel()));
+		sb.append(", Success: ").append(execInfo.isSuccess() ? "True" : "False ❌");
+
 		sb.append(LINE_SEPARATOR);
-		sb.append("-- ");
 
-		writeTypeEntry(sb, execInfo, queryInfoList);
-
-		writeBatchEntry(sb, execInfo, queryInfoList);
-
-		writeQuerySizeEntry(sb, execInfo, queryInfoList);
-
-		writeBatchSizeEntry(sb, execInfo, queryInfoList);
-
-		sb.delete(sb.length() - 2, sb.length());  // delete last ", "
-		sb.append(LINE_SEPARATOR);
-		sb.append("-- ");
-
-		writeParamsEntry(sb, execInfo, queryInfoList);
-
-		writeQueriesEntry(sb, execInfo, queryInfoList);
-
+		sb.append("-- Type: ").append(getStatementType(execInfo.getStatementType()));
+		sb.append(", QuerySize: ").append(queryInfos.size());
+		sb.append(", Batch: ").append(execInfo.isBatch() ? "True" : "False");
+		if (execInfo.isBatch()) {
+			sb.append(", BatchSize: ").append(execInfo.getBatchSize());
+		}
 		return sb.toString();
 	}
 
-	@Override
-	protected String formatQuery(String query) {
-		return this.sqlQueryFormatter.format(query);
-	}
-
-	@Override
-	protected void writeQueriesEntry(StringBuilder sb, ExecutionInfo execInfo, List<QueryInfo> queryInfoList) {
-		for (QueryInfo queryInfo : queryInfoList) {
-			sb.append(formatQuery(queryInfo.getQuery()));
-			sb.append(';');
-			sb.append(LINE_SEPARATOR);
+	private String formatParams(ExecutionInfo execInfo, ParameterSetOperation params) {
+		if (execInfo.getStatementType() == StatementType.PREPARED) {
+			return getParameterValueToDisplay(params);
+		} else {
+			return getParameterKeyToDisplay(params) + "=" + getParameterValueToDisplay(params);
 		}
 	}
-
 }
