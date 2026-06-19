@@ -55,14 +55,41 @@ class MyTest {
 
 ### TestClock
 
-`TestClock` is an implementation of `Clock` with a fixed time useful for testing. It is initialized to `2016-01-01T00:00:00.123456Z` by default and does not advance on its own. Use `changeInstant()`, `windClock()`, or `reset()` to control its time.
+Production code that calls `LocalDateTime.now()`, `Instant.now()`, or `ZonedDateTime.now()` directly is non-deterministic: the value returned depends on when the code actually runs. This makes tests brittle and, when combined with [validation-file-assertions], makes stabilizing time-dependent output impossible: a snapshot taken on Monday will fail on Tuesday. Beyond reproducibility, certain scenarios simply cannot be tested without a controllable clock at all: an expiry check that only triggers after 30 days cannot be verified by waiting 30 days, and a token that must not be accepted after its validity window has closed cannot be tested without being able to move time forward. This reflects our broader [stance on determinism][cronn-determinism].
+
+The JDK's `java.time.Clock` abstraction solves this. Instead of calling `Instant.now()` directly, code accepts a `Clock` dependency and calls `Instant.now(clock)`. The `Clock` can then be a real system clock in production and a fixed, controllable instance in tests, without any conditional logic in the application code. Spring makes this straightforward: declare a `Clock` bean in your production context and override it in your test context.
 
 ```java
+// Production context
+@Bean
+Clock clock() {
+    return Clock.systemUTC();
+}
+```
+
+```java
+// Test context
 @Bean
 TestClock testClock() {
     return new TestClock();
 }
+```
 
+```java
+// Application code
+@Service
+class SubscriptionService {
+    private final Clock clock;
+
+    public boolean isActive(Subscription subscription) {
+        return subscription.getExpiresAt().isAfter(Instant.now(clock));
+    }
+}
+```
+
+`TestClock` is an implementation of `Clock` with a fixed time useful for testing. It is initialized to `2016-01-01T00:00:00.123456Z` by default and does not advance on its own. Use `changeInstant()`, `windClock()`, or `reset()` to control its time.
+
+```java
 @Test
 void orderExpiresAfterOneDay() {
     Order order = orderService.create();
@@ -445,3 +472,4 @@ Maven:
 > - No `Accept` header is sent. For applications that vary authorization by media type, only the endpoint matching an absent `Accept` header will be tested.
 
 [validation-file-assertions]: https://github.com/cronn/validation-file-assertions
+[cronn-determinism]: https://github.com/cronn#determinism
