@@ -3,7 +3,10 @@ package de.cronn.testutils.authorization;
 import static org.assertj.core.api.Assertions.*;
 
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
+
+import java.util.Set;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -99,7 +102,7 @@ class AuthorizationTestUtilTest implements JUnit5ValidationFileAssertions {
 
 	@Test
 	void buildAuthorizationMatrix_throwsOnEmptyCredentials(AuthorizationTestUtil authorizationTestUtil) {
-		assertThatThrownBy(() -> authorizationTestUtil.buildAuthorizationMatrix(List.of()))
+		assertThatThrownBy(() -> authorizationTestUtil.buildAuthorizationMatrix(Set.of()))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("must not be empty");
 	}
@@ -112,7 +115,7 @@ class AuthorizationTestUtilTest implements JUnit5ValidationFileAssertions {
 
 		String accessToken1 = tokenFactory.tokenForRoles(userProofFactory.jwkThumbprint(), Role.USER);
 		String accessToken2 = tokenFactory.tokenForRoles(adminProofFactory.jwkThumbprint(), Role.ADMIN);
-		List<Credentials> credentials = List.of(
+		Collection<DPoPCredentials> credentials = List.of(
 			new DPoPCredentials(Role.ADMIN.name(), accessToken2, adminProofFactory),
 			new DPoPCredentials(Role.USER.name(), accessToken1, userProofFactory));
 		String accessToken = tokenFactory.tokenForRoles(noRoleProofFactory.jwkThumbprint());
