@@ -4,6 +4,7 @@ package de.cronn.testutils.authorization;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.time.Duration;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.LinkedHashSet;
@@ -93,23 +94,23 @@ public final class AuthorizationTestUtil {
 	}
 
 	/**
-	 * Like {@link #buildAuthorizationMatrix(List, List)} with no ignored path prefixes.
+	 * Like {@link #buildAuthorizationMatrix(Collection, List)} with no ignored path prefixes.
 	 */
-	public String buildAuthorizationMatrix(List<Credentials> credentials) {
+	public String buildAuthorizationMatrix(Collection<? extends Credentials> credentials) {
 		return buildAuthorizationMatrix(credentials, List.of());
 	}
 
 	/**
-	 * Like {@link #buildAuthorizationMatrix(List, Credentials, List)} without an authenticated credentials check.
+	 * Like {@link #buildAuthorizationMatrix(Collection, Credentials, List)} without an authenticated credentials check.
 	 */
-	public String buildAuthorizationMatrix(List<Credentials> credentials, List<String> ignoredPathPrefixes) {
+	public String buildAuthorizationMatrix(Collection<? extends Credentials> credentials, List<String> ignoredPathPrefixes) {
 		return buildAuthorizationMatrix(credentials, null, ignoredPathPrefixes);
 	}
 
 	/**
-	 * Like {@link #buildAuthorizationMatrix(List, Credentials, List)} with no ignored path prefixes.
+	 * Like {@link #buildAuthorizationMatrix(Collection, Credentials, List)} with no ignored path prefixes.
 	 */
-	public String buildAuthorizationMatrix(List<Credentials> credentials, @Nullable Credentials authenticatedCredentials) {
+	public String buildAuthorizationMatrix(Collection<? extends Credentials> credentials, @Nullable Credentials authenticatedCredentials) {
 		return buildAuthorizationMatrix(credentials, authenticatedCredentials, List.of());
 	}
 
@@ -127,7 +128,7 @@ public final class AuthorizationTestUtil {
 	 * @return a Markdown table with columns METHOD, PATH, ALLOWED_ROLES
 	 */
 	public String buildAuthorizationMatrix(
-		List<Credentials> credentials,
+		Collection<? extends Credentials> credentials,
 		@Nullable Credentials authenticatedCredentials,
 		List<String> ignoredPathPrefixes) {
 
@@ -178,7 +179,7 @@ public final class AuthorizationTestUtil {
 		return "http://localhost:" + localServerPort;
 	}
 
-	private static void validateCredentials(List<Credentials> credentials) {
+	private static void validateCredentials(Collection<? extends Credentials> credentials) {
 		if (credentials.isEmpty()) {
 			throw new IllegalArgumentException("credentials must not be empty");
 		}
@@ -247,7 +248,7 @@ public final class AuthorizationTestUtil {
 		RestClient restClient,
 		String baseUrl,
 		List<Endpoint> endpoints,
-		List<Credentials> credentials,
+		Collection<? extends Credentials> credentials,
 		@Nullable Credentials authenticatedCredentials) {
 
 		return endpoints.stream()
@@ -259,7 +260,7 @@ public final class AuthorizationTestUtil {
 		RestClient restClient,
 		String baseUrl,
 		Endpoint endpoint,
-		List<Credentials> credentials,
+		Collection<? extends Credentials> credentials,
 		@Nullable Credentials authenticatedCredentials) {
 
 		if (isUnauthenticatedAllowed(restClient, baseUrl, endpoint)) {
@@ -284,7 +285,7 @@ public final class AuthorizationTestUtil {
 		return isAllowed(callEndpoint(restClient, baseUrl, endpoint, authenticatedCredentials));
 	}
 
-	private static List<String> checkAccess(RestClient restClient, String baseUrl, Endpoint endpoint, List<Credentials> credentials) {
+	private static List<String> checkAccess(RestClient restClient, String baseUrl, Endpoint endpoint, Collection<? extends Credentials> credentials) {
 		return credentials.stream()
 			.filter(c -> isAllowed(callEndpoint(restClient, baseUrl, endpoint, c)))
 			.map(Credentials::name)
@@ -366,7 +367,7 @@ public final class AuthorizationTestUtil {
 		}
 	}
 
-	private static Set<String> allNames(List<Credentials> credentials) {
+	private static Set<String> allNames(Collection<? extends Credentials> credentials) {
 		return credentials.stream()
 			.map(Credentials::name)
 			.collect(Collectors.toCollection(LinkedHashSet::new));
