@@ -9,6 +9,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AbstractAuthenticationToken;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.core.GrantedAuthority;
@@ -57,7 +58,8 @@ public class SecurityConfig {
 				.anyRequest().denyAll())
 			.httpBasic(basic -> basic.authenticationEntryPoint(authenticationEntryPoint()))
 			.oauth2ResourceServer(oauth2 -> oauth2
-				.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter())))
+				.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter()))
+				.dPoP(Customizer.withDefaults()))
 			.exceptionHandling(ex -> ex
 				.authenticationEntryPoint(authenticationEntryPoint())
 				.accessDeniedHandler(accessDeniedHandler()));

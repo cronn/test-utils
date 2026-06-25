@@ -7,6 +7,13 @@
 
 Utility classes for JUnit 5 tests.
 
+## Versioning
+
+| Library Version | Java Version | Spring Boot Version |
+|-----------------|--------------|---------------------|
+| 1.x             | 17+          | 3.x                 |
+| 2.x             | 21+          | 4.x                 |
+
 ## Basic features
 
 Add the following dependency to your project:

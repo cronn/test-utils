@@ -13,7 +13,9 @@ values
 -- Type: Prepared, QuerySize: 1, Batch: False
 
 select
-    next value for child_entity_seq;
+    next value
+for
+    child_entity_seq;
 
 
 -- Name: dataSource, Isolation: NONE, Success: True
