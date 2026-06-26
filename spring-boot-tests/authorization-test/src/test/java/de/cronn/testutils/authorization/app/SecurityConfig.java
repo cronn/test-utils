@@ -51,7 +51,7 @@ public class SecurityConfig {
 				.requestMatchers("/guest-only").hasRole(Role.GUEST.name())
 				.requestMatchers("/locked").denyAll()
 				.requestMatchers("/items/**").hasRole(Role.ADMIN.name())
-				.requestMatchers("/teapot").hasRole(Role.USER.name())
+				.requestMatchers("/gone").hasRole(Role.USER.name())
 				.requestMatchers("/not-found").hasRole(Role.USER.name())
 				.requestMatchers("/server-error").hasRole(Role.USER.name())
 				.requestMatchers("/any-method").hasRole(Role.ADMIN.name())

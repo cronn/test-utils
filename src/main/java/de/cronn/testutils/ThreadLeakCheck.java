@@ -130,8 +130,8 @@ public class ThreadLeakCheck implements BeforeAllCallback, AfterAllCallback {
 			.stream()
 			.filter(Objects::nonNull)
 			.filter(Thread::isAlive)
-			.sorted(Comparator.comparingLong(Thread::getId))
-			.collect(Collectors.toMap(Thread::getId, thread -> thread, (t, t2) -> { throw new IllegalStateException(); }, LinkedHashMap::new ));
+			.sorted(Comparator.comparingLong(Thread::threadId))
+			.collect(Collectors.toMap(Thread::threadId, thread -> thread, (t, t2) -> { throw new IllegalStateException(); }, LinkedHashMap::new ));
 	}
 
 	private Predicate<Thread> threadNameStartsWithAny(Collection<String> prefixes) {

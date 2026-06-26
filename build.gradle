@@ -32,7 +32,7 @@ allprojects {
 
     tasks.withType(JavaCompile) {
         options.compilerArgs.addAll(["-Werror", "-Xlint:all"])
-        options.release = 17
+        options.release = 21
     }
 
     tasks.withType(Javadoc) {

@@ -19,6 +19,7 @@
 | PATCH | /error | {⚠ PERMIT_ALL ⚠} |
 | POST | /error | {⚠ PERMIT_ALL ⚠} |
 | PUT | /error | {⚠ PERMIT_ALL ⚠} |
+| GET | /gone | USER |
 | GET | /guest-only | GUEST |
 | DELETE | /items/{id} | ADMIN |
 | GET | /items/{id} | ADMIN |
@@ -26,5 +27,4 @@
 | GET | /not-found | USER |
 | GET | /public | {⚠ PERMIT_ALL ⚠} |
 | GET | /server-error | USER |
-| GET | /teapot | USER |
 | GET | /user | ADMIN<br>USER |
