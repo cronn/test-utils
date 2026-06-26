@@ -1,6 +1,10 @@
 package de.cronn.testutils;
 
+import java.io.Serial;
+
 public class TestUtilsRuntimeException extends RuntimeException {
+	@Serial
+	private static final long serialVersionUID = 1L;
 
 	public TestUtilsRuntimeException() {
 		super();
