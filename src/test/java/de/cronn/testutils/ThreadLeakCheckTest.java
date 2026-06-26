@@ -49,7 +49,8 @@ class ThreadLeakCheckTest {
 		try {
 			List<Throwable> exceptions = JUnitTestExecutor.runTestClassAndReturnExceptionsThrown(ThreadLeakingTest.class);
 			assertThat(exceptions)
-				.hasOnlyOneElementSatisfying(
+				.singleElement()
+				.satisfies(
 					e ->
 						assertThat(e)
 							.isInstanceOf(ThreadLeakException.class)
@@ -65,7 +66,8 @@ class ThreadLeakCheckTest {
 		try {
 			List<Throwable> exceptions = JUnitTestExecutor.runTestClassAndReturnExceptionsThrown(NestedClassesTest.class);
 			assertThat(exceptions)
-				.hasOnlyOneElementSatisfying(
+				.singleElement()
+				.satisfies(
 					e ->
 						assertThat(e)
 							.isInstanceOf(ThreadLeakException.class)
@@ -80,7 +82,8 @@ class ThreadLeakCheckTest {
 	void testInvalidUsageInNestedClass() throws Exception {
 		List<Throwable> exceptions = JUnitTestExecutor.runTestClassAndReturnExceptionsThrown(InvalidUsageNestedClassesTest.class);
 		assertThat(exceptions)
-			.hasOnlyOneElementSatisfying(
+			.singleElement()
+			.satisfies(
 				e ->
 					assertThat(e)
 						.isInstanceOf(IllegalStateException.class)

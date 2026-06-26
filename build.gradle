@@ -29,6 +29,16 @@ allprojects {
 	test {
 		useJUnitPlatform()
 	}
+
+    tasks.withType(JavaCompile) {
+        options.compilerArgs.addAll(["-Werror", "-Xlint:all"])
+        options.release = 17
+    }
+
+    tasks.withType(Javadoc) {
+        failOnError = true
+        options.addBooleanOption("Xdoclint:all,-missing", true)
+    }
 }
 
 sourceSets {
