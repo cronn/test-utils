@@ -33,8 +33,8 @@ class JUnit5MisusageCheckTest {
 	void testMisusageCheck() {
 		TestExecutionSummary result = runTestClass(SampleChildTest.class);
 		Assertions.assertThat(result.getFailures())
-			.hasOnlyOneElementSatisfying(
-				failure ->
+			.singleElement()
+			.satisfies(failure ->
 					Assertions.assertThat(failure.getException())
 						.hasMessage(
 							"Misused junit5 callback methods: \n" +
