@@ -66,9 +66,9 @@ public class TestController {
 		return "regex-" + id;
 	}
 
-	@GetMapping("/teapot")
-	public ResponseEntity<String> teapot() {
-		return ResponseEntity.status(HttpStatus.I_AM_A_TEAPOT).body("teapot");
+	@GetMapping("/gone")
+	public ResponseEntity<String> gone() {
+		return ResponseEntity.status(HttpStatus.GONE).body("gone");
 	}
 
 	@GetMapping("/not-found")

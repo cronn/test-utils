@@ -2,12 +2,12 @@ package de.cronn.testutils.hibernate;
 
 import java.util.Collection;
 
-import de.cronn.reflection.util.PropertyUtils;
 import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.generator.Generator;
 import org.hibernate.id.enhanced.PooledOptimizer;
 import org.hibernate.id.enhanced.SequenceStyleGenerator;
 
+import de.cronn.reflection.util.PropertyUtils;
 import jakarta.persistence.EntityManagerFactory;
 
 /**
@@ -61,8 +61,7 @@ public class HibernateUtil {
 	public void resetSequenceGeneratorStates() {
 		SessionFactoryImplementor sessionFactory = entityManagerFactory.unwrap(SessionFactoryImplementor.class);
 		sessionFactory.getMappingMetamodel()
-			.streamEntityDescriptors()
-			.forEach(entityPersister -> {
+			.forEachEntityDescriptor(entityPersister -> {
 				Generator generator = entityPersister.getGenerator();
 				if (generator instanceof SequenceStyleGenerator sequenceStyleGenerator) {
 					if (sequenceStyleGenerator.getOptimizer() instanceof PooledOptimizer pooledOptimizer) {
