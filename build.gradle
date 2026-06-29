@@ -100,7 +100,7 @@ dependencies {
 
 	jpaQueryCapturingSupportApi "de.cronn:commons-lang:1.6"
 	jpaQueryCapturingSupportApi "de.cronn:validation-file-assertions:0.9.0"
-	jpaQueryCapturingSupportImplementation "net.ttddyy:datasource-proxy:1.10.1"
+	jpaQueryCapturingSupportImplementation "net.ttddyy:datasource-proxy:1.11.0"
 	jpaQueryCapturingSupportImplementation "org.springframework.boot:spring-boot-autoconfigure"
 	jpaQueryCapturingSupportRuntimeOnly "com.github.gavlyukovskiy:datasource-proxy-spring-boot-starter:2.0.1"
 	jpaQueryCapturingSupportCompileOnly "org.hibernate.orm:hibernate-core"

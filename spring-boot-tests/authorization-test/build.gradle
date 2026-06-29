@@ -4,7 +4,7 @@ dependencies {
     testImplementation "org.springframework.boot:spring-boot-starter-security"
     testImplementation "org.springframework.boot:spring-boot-starter-oauth2-resource-server"
     testImplementation "org.springframework.boot:spring-boot-starter-test"
-    testImplementation "de.cronn:validation-file-assertions:0.8.0"
+    testImplementation "de.cronn:validation-file-assertions:0.9.0"
     testImplementation(project(":")) {
         capabilities {
             requireCapability("de.cronn:test-utils-authorization-test-support")
