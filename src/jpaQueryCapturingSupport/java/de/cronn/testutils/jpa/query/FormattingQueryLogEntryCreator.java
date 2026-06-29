@@ -12,7 +12,7 @@ import net.ttddyy.dsproxy.proxy.ParameterSetOperation;
 
 public class FormattingQueryLogEntryCreator extends AbstractQueryLogEntryCreator {
 
-	private static final String LINE_SEPARATOR = System.lineSeparator();
+	private static final String LINE_SEPARATOR = "\n";
 
 	private final SqlQueryFormatter sqlQueryFormatter;
 
