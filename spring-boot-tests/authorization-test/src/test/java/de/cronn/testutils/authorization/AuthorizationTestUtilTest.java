@@ -7,6 +7,7 @@ import java.util.Collection;
 import java.util.List;
 
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -105,6 +106,42 @@ class AuthorizationTestUtilTest implements JUnit5ValidationFileAssertions {
 		assertThatThrownBy(() -> authorizationTestUtil.buildAuthorizationMatrix(Set.of()))
 			.isInstanceOf(IllegalArgumentException.class)
 			.hasMessageContaining("must not be empty");
+	}
+
+	@Test
+	void buildAuthorizationMatrix_withCustomResultsRenderer(AuthorizationTestUtil authorizationTestUtil) {
+		List<Credentials> credentials = bearerCredentialsFor(Role.ADMIN, Role.USER, Role.GUEST);
+		ResultsRenderer csvRenderer = (results, allCredentials) -> results.stream()
+			.map(result -> String.join(";",
+				result.endpoint().method().name(),
+				result.endpoint().path(),
+				String.join(",", result.allowedRoles())))
+			.collect(Collectors.joining("\n", "", "\n"));
+
+		String csv = authorizationTestUtil.buildAuthorizationMatrix(
+			credentials, null, List.of("/actuator", "/error", "/regex"), csvRenderer);
+
+		assertWithFile(csv, FileExtensions.CSV);
+	}
+
+	@Test
+	void buildAuthorizationMatrix_withCustomizedMarkdownTableRenderer(AuthorizationTestUtil authorizationTestUtil) {
+		List<Credentials> credentials = bearerCredentialsFor(Role.ADMIN, Role.USER, Role.GUEST);
+		Credentials authenticated = new BearerTokenCredentials("authenticated", tokenFactory.tokenForRoles());
+		ResultsRenderer renderer = new MarkdownTableRenderer() {
+			@Override
+			protected String formatAllowedCell(EndpointResult result, Set<String> allCredentialNames) {
+				if (result.unauthenticatedAllowed()) {
+					return "{PUBLIC}";
+				}
+				return super.formatAllowedCell(result, allCredentialNames);
+			}
+		};
+
+		String markdown = authorizationTestUtil.buildAuthorizationMatrix(
+			credentials, authenticated, List.of("/actuator", "/error", "/regex"), renderer);
+
+		assertWithFile(markdown, FileExtensions.MD);
 	}
 
 	@Test
