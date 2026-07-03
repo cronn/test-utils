@@ -390,7 +390,19 @@ For every endpoint registered in the application's `RequestMappingHandlerMapping
 the AuthorizationTestUtil issues one HTTP request per provided principal (plus one anonymous request)
 and records which requests were *not* rejected with `401`/`403`/`405`.
 Endpoints accessible to every provided principal render as `{ANY_ROLE}`;
-anonymously accessible endpoints render as `{UNAUTHENTICATED}`.
+anonymously accessible endpoints render as `{⚠ PERMIT_ALL ⚠}`.
+
+Example output:
+
+```markdown
+| METHOD | PATH             | ALLOWED_ROLES    |
+|--------|------------------|------------------|
+| GET    | /api/orders      | {ANY_ROLE}       |
+| POST   | /api/orders      | ADMIN            |
+| GET    | /api/orders/{id} | ADMIN<br>USER    |
+| GET    | /api/public-info | {⚠ PERMIT_ALL ⚠} |
+| GET    | /me              | {AUTHENTICATED}  |
+```
 
 Each principal under test is represented by a `Credentials` instance, which carries a **name** (used in the output matrix) and the credentials sent with each request. Three authentication schemes are supported and may be freely mixed in a single matrix:
 
@@ -411,6 +423,8 @@ You are responsible for obtaining tokens / configuring users before the test run
 > Mixing multiple roles in one credential set makes it impossible to tell which role actually grants access to a given endpoint.
 
 An optional `authenticatedCredentials` parameter lets you probe endpoints that require authentication but no specific role (renders as `{AUTHENTICATED}` in the matrix). Pass any credentials for a user or token that is authenticated but holds no roles — this works for all three authentication schemes.
+
+By default the results are rendered as a Markdown table. To produce a different output format, pass a custom `ResultsRenderer` implementation to `buildAuthorizationMatrix`.
 
 The easiest way to use `AuthorizationTestUtil` is via the provided JUnit 5 extension,
 which wires up the utility automatically from the Spring application context:
