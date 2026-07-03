@@ -13,7 +13,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.jspecify.annotations.Nullable;
-import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
@@ -28,6 +27,7 @@ import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandl
  *
  * <p>Discovers all endpoints registered in a {@link RequestMappingHandlerMapping}, calls each one
  * with the provided credentials, and produces a Markdown table listing which principals had access.
+ * The output format can be customized by passing a {@link ResultsRenderer}.
  *
  * <p>Both bearer-token and HTTP Basic credentials are supported and may be mixed freely in a
  * single matrix — both authentication schemes ultimately resolve to Spring {@code GrantedAuthority}
@@ -131,11 +131,29 @@ public final class AuthorizationTestUtil {
 		Collection<? extends Credentials> credentials,
 		@Nullable Credentials authenticatedCredentials,
 		List<String> ignoredPathPrefixes) {
+		return buildAuthorizationMatrix(credentials, authenticatedCredentials, ignoredPathPrefixes, new MarkdownTableRenderer());
+	}
+
+	/**
+	 * Like {@link #buildAuthorizationMatrix(Collection, Credentials, List)}, but renders the results
+	 * with the given {@link ResultsRenderer} instead of the default Markdown table.
+	 *
+	 * @param credentials              the principals (with their credentials) to test; names must be unique
+	 * @param authenticatedCredentials credentials for an authenticated but unprivileged caller, or {@code null} to skip
+	 * @param ignoredPathPrefixes      endpoints whose path starts with any of these prefixes are skipped
+	 * @param resultsRenderer          renders the collected endpoint results into the returned string
+	 * @return the rendered authorization matrix
+	 */
+	public String buildAuthorizationMatrix(
+		Collection<? extends Credentials> credentials,
+		@Nullable Credentials authenticatedCredentials,
+		List<String> ignoredPathPrefixes,
+		ResultsRenderer resultsRenderer) {
 
 		validateCredentials(credentials);
 		List<Endpoint> endpoints = discoverEndpoints(handlerMapping, ignoredPathPrefixes);
 		List<EndpointResult> results = testEndpoints(restClient, baseUrl, endpoints, credentials, authenticatedCredentials);
-		return renderMarkdown(results, allNames(credentials));
+		return resultsRenderer.render(results, credentials);
 	}
 
 	/**
@@ -338,45 +356,4 @@ public final class AuthorizationTestUtil {
 		};
 	}
 
-	private static String renderMarkdown(List<EndpointResult> results, Set<String> allNames) {
-		StringBuilder sb = new StringBuilder();
-		sb.append("| METHOD | PATH | ALLOWED_ROLES |\n");
-		sb.append("| --- | --- | --- |\n");
-		for (EndpointResult result : results) {
-			String cell = formatAllowedCell(result, allNames);
-			sb.append("| ").append(result.endpoint().method().name())
-				.append(" | ").append(result.endpoint().path())
-				.append(" | ").append(cell)
-				.append(" |\n");
-		}
-		return sb.toString();
-	}
-
-	private static String formatAllowedCell(EndpointResult result, Set<String> allNames) {
-		if (result.unauthenticatedAllowed()) {
-			return "{⚠ PERMIT_ALL ⚠}";
-		}
-		if (Boolean.TRUE.equals(result.authenticatedAllowed())) {
-			return "{AUTHENTICATED}";
-		}
-		Set<String> allowed = new LinkedHashSet<>(result.allowedRoles());
-		if (allowed.equals(allNames)) {
-			return "{ANY_ROLE}";
-		} else {
-			return String.join("<br>", allowed);
-		}
-	}
-
-	private static Set<String> allNames(Collection<? extends Credentials> credentials) {
-		return credentials.stream()
-			.map(Credentials::name)
-			.collect(Collectors.toCollection(LinkedHashSet::new));
-	}
-
-	private record Endpoint(HttpMethod method, String path) {
-	}
-
-	private record EndpointResult(Endpoint endpoint, List<String> allowedRoles, boolean unauthenticatedAllowed,
-	                              @Nullable Boolean authenticatedAllowed) {
-	}
 }
