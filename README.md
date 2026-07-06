@@ -386,7 +386,7 @@ AuthorizationTestUtil generates an authorization matrix for a running Spring MVC
 This is useful for asserting that each endpoint is reachable by exactly the roles you expect.
 We recommend to assert the authorization matrix using our [validation-file-assertions] library.
 
-For every endpoint registered in the application's `RequestMappingHandlerMapping`,
+For every endpoint registered in the application's `RequestMappingInfoHandlerMapping` beans,
 the AuthorizationTestUtil issues one HTTP request per provided principal (plus one anonymous request)
 and records which requests were *not* rejected with `401`/`403`/`405`.
 Endpoints accessible to every provided principal render as `{ANY_ROLE}`;
@@ -459,13 +459,12 @@ class MyAuthorizationTest implements JUnit5ValidationFileAssertions {
     int port;
 
     @Autowired
-    @Qualifier("requestMappingHandlerMapping")
-    RequestMappingHandlerMapping handlerMapping;
+    Collection<RequestMappingInfoHandlerMapping> handlerMappings;
 
     @Test
     void authorizationMatrix() {
         AuthorizationTestUtil authorizationTestUtil =
-                new AuthorizationTestUtil(handlerMapping, AuthorizationTestUtil.createRestClient(port));
+                new AuthorizationTestUtil(handlerMappings, AuthorizationTestUtil.createRestClient(port));
         List<Credentials> credentials = List.of(
                 new BearerTokenCredentials("ADMIN", adminToken),
                 new BasicAuthCredentials("USER", "alice", "s3cret"));
@@ -479,7 +478,7 @@ class MyAuthorizationTest implements JUnit5ValidationFileAssertions {
     void authorizationMatrixWithDPoP() {
         String baseUrl = AuthorizationTestUtil.localBaseUrl(port);
         AuthorizationTestUtil authorizationTestUtil =
-                new AuthorizationTestUtil(handlerMapping, AuthorizationTestUtil.createRestClient(baseUrl), baseUrl);
+                new AuthorizationTestUtil(handlerMappings, AuthorizationTestUtil.createRestClient(baseUrl), baseUrl);
         List<Credentials> credentials = List.of(
                 new BearerTokenCredentials("ADMIN", adminToken),
                 new DPoPCredentials("USER", userAccessToken, userProofFactory));
