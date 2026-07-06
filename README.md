@@ -378,9 +378,7 @@ Maven:
 </dependency>
 ```
 
-### 🛡️ Authorization Test Support [INCUBATING]
-
-> **INCUBATING** — API and output format may change in a backwards-incompatible way in any release.
+### 🛡️ Authorization Test Support
 
 AuthorizationTestUtil generates an authorization matrix for a running Spring MVC application as a Markdown table.
 This is useful for asserting that each endpoint is reachable by exactly the roles you expect.
