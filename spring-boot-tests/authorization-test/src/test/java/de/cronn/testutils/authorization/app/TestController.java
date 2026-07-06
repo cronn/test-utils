@@ -81,11 +81,6 @@ public class TestController {
 		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("boom");
 	}
 
-	@GetMapping("/actuator/info")
-	public String actuatorInfo() {
-		return "info";
-	}
-
 	@RequestMapping("/any-method")
 	public String anyMethod() {
 		return "any";

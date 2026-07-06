@@ -9,6 +9,7 @@ import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -20,12 +21,12 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.servlet.mvc.condition.PathPatternsRequestCondition;
 import org.springframework.web.servlet.mvc.method.RequestMappingInfo;
-import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
+import org.springframework.web.servlet.mvc.method.RequestMappingInfoHandlerMapping;
 
 /**
  * Utility for generating an endpoint authorization matrix as a Markdown table.
  *
- * <p>Discovers all endpoints registered in a {@link RequestMappingHandlerMapping}, calls each one
+ * <p>Discovers all endpoints registered in a {@link RequestMappingInfoHandlerMapping}, calls each one
  * with the provided credentials, and produces a Markdown table listing which principals had access.
  * The output format can be customized by passing a {@link ResultsRenderer}.
  *
@@ -37,11 +38,11 @@ import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandl
  * For custom adaptations, construct the instance directly:
  * <pre>{@code
  * // bearer / basic auth only:
- * new AuthorizationTestUtil(handlerMapping, AuthorizationTestUtil.createRestClient(localServerPort))
+ * new AuthorizationTestUtil(handlerMappings, AuthorizationTestUtil.createRestClient(localServerPort))
  *
  * // with DPoP support:
  * String baseUrl = AuthorizationTestUtil.localBaseUrl(localServerPort);
- * new AuthorizationTestUtil(handlerMapping, AuthorizationTestUtil.createRestClient(baseUrl), baseUrl)
+ * new AuthorizationTestUtil(handlerMappings, AuthorizationTestUtil.createRestClient(baseUrl), baseUrl)
  * }</pre>
  */
 public final class AuthorizationTestUtil {
@@ -54,7 +55,7 @@ public final class AuthorizationTestUtil {
 	private static final Set<RequestMethod> ALL_METHODS_EXCEPT_TRACE =
 		EnumSet.complementOf(EnumSet.of(RequestMethod.TRACE));
 
-	private final RequestMappingHandlerMapping handlerMapping;
+	private final Collection<RequestMappingInfoHandlerMapping> handlerMappings;
 	private final RestClient restClient;
 	@Nullable
 	private final String baseUrl;
@@ -64,15 +65,15 @@ public final class AuthorizationTestUtil {
 	 *
 	 * <p>Sufficient for bearer-token and HTTP Basic authentication. If you intend to use
 	 * {@link DPoPCredentials}, use
-	 * {@link #AuthorizationTestUtil(RequestMappingHandlerMapping, RestClient, String)} instead
+	 * {@link #AuthorizationTestUtil(Collection, RestClient, String)} instead
 	 * so that full absolute URIs can be constructed for DPoP proof generation.
 	 *
-	 * @param handlerMapping the {@link RequestMappingHandlerMapping} bean of the application
+	 * @param handlerMappings the {@link RequestMappingInfoHandlerMapping} beans of the application
 	 * @param restClient     {@link RestClient} configured against the running application
 	 *                       (must have a base URL set, or paths must resolve absolutely)
 	 */
-	public AuthorizationTestUtil(RequestMappingHandlerMapping handlerMapping, RestClient restClient) {
-		this(handlerMapping, restClient, null);
+	public AuthorizationTestUtil(Collection<RequestMappingInfoHandlerMapping> handlerMappings, RestClient restClient) {
+		this(handlerMappings, restClient, null);
 	}
 
 	/**
@@ -81,14 +82,14 @@ public final class AuthorizationTestUtil {
 	 * <p>Required when using {@link DPoPCredentials}. For bearer-token and
 	 * HTTP Basic authentication the two-argument constructor is sufficient.
 	 *
-	 * @param handlerMapping the {@link RequestMappingHandlerMapping} bean of the application
+	 * @param handlerMappings the {@link RequestMappingInfoHandlerMapping} beans of the application
 	 * @param restClient     {@link RestClient} configured against the running application
 	 *                       (must have a base URL set, or paths must resolve absolutely)
 	 * @param baseUrl        the base URL of the running application (e.g. {@code "http://localhost:8080"}),
 	 *                       used to construct full absolute URIs for DPoP proof generation
 	 */
-	public AuthorizationTestUtil(RequestMappingHandlerMapping handlerMapping, RestClient restClient, String baseUrl) {
-		this.handlerMapping = handlerMapping;
+	public AuthorizationTestUtil(Collection<RequestMappingInfoHandlerMapping> handlerMappings, RestClient restClient, String baseUrl) {
+		this.handlerMappings = handlerMappings;
 		this.restClient = restClient;
 		this.baseUrl = baseUrl;
 	}
@@ -151,7 +152,7 @@ public final class AuthorizationTestUtil {
 		ResultsRenderer resultsRenderer) {
 
 		validateCredentials(credentials);
-		List<Endpoint> endpoints = discoverEndpoints(handlerMapping, ignoredPathPrefixes);
+		List<Endpoint> endpoints = discoverEndpoints(handlerMappings, ignoredPathPrefixes);
 		List<EndpointResult> results = testEndpoints(restClient, baseUrl, endpoints, credentials, authenticatedCredentials);
 		return resultsRenderer.render(results, credentials);
 	}
@@ -160,7 +161,7 @@ public final class AuthorizationTestUtil {
 	 * Builds an internal {@link RestClient} from {@code baseUrl} with defensive 5s connect / 10s read timeouts.
 	 *
 	 * @param baseUrl base URL of the running application (e.g. {@code "http://localhost:8080"});
-	 *                paths discovered from {@code handlerMapping} are appended to it
+	 *                paths discovered from {@code handlerMappings} are appended to it
 	 * @return a rest client that can be used for authorization tests
 	 */
 	public static RestClient createRestClient(String baseUrl) {
@@ -210,10 +211,15 @@ public final class AuthorizationTestUtil {
 	}
 
 	private static List<Endpoint> discoverEndpoints(
-		RequestMappingHandlerMapping handlerMapping, List<String> ignoredPathPrefixes) {
+		Collection<RequestMappingInfoHandlerMapping> handlerMappings, List<String> ignoredPathPrefixes) {
 
 		Set<Endpoint> endpoints = new LinkedHashSet<>();
-		for (RequestMappingInfo info : handlerMapping.getHandlerMethods().keySet()) {
+		Set<RequestMappingInfo> requestMappingInfos = handlerMappings.stream()
+			.map(RequestMappingInfoHandlerMapping::getHandlerMethods)
+			.map(Map::keySet)
+			.flatMap(Collection::stream)
+			.collect(Collectors.toSet());
+		for (RequestMappingInfo info : requestMappingInfos) {
 			Set<String> paths = getPaths(info, ignoredPathPrefixes);
 			if (paths.isEmpty()) {
 				continue;
@@ -332,7 +338,7 @@ public final class AuthorizationTestUtil {
 		if (credentials instanceof DPoPCredentials) {
 			if (baseUrl == null) {
 				throw new IllegalStateException(
-					"baseUrl is required when using DPoP credentials. Use AuthorizationTestUtil(handlerMapping, restClient, baseUrl) to provide it."
+					"baseUrl is required when using DPoP credentials. Use AuthorizationTestUtil(handlerMappings, restClient, baseUrl) to provide it."
 				);
 			}
 			return URI.create(baseUrl + encodedPath);
