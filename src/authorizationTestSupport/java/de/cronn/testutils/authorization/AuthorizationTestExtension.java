@@ -1,5 +1,7 @@
 package de.cronn.testutils.authorization;
 
+import java.util.Map;
+
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.ParameterContext;
@@ -8,13 +10,13 @@ import org.junit.jupiter.api.extension.ParameterResolver;
 import org.springframework.boot.web.server.servlet.context.ServletWebServerApplicationContext;
 import org.springframework.context.ApplicationContext;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
-import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
+import org.springframework.web.servlet.mvc.method.RequestMappingInfoHandlerMapping;
 
 /**
  * JUnit 5 extension that resolves {@link AuthorizationTestUtil} as a method parameter.
  *
  * <p>Requires a {@link org.springframework.boot.test.context.SpringBootTest} with
- * {@code webEnvironment = RANDOM_PORT}. Retrieves the {@code requestMappingHandlerMapping} bean
+ * {@code webEnvironment = RANDOM_PORT}. Retrieves all {@code RequestMappingInfoHandlerMapping} beans
  * and the running server port from the Spring application context automatically.
  *
  * <p>Usage:
@@ -43,10 +45,10 @@ public class AuthorizationTestExtension implements ParameterResolver {
 		Assertions.assertInstanceOf(ServletWebServerApplicationContext.class, applicationContext);
 		ServletWebServerApplicationContext servletWebServerApplicationContext = (ServletWebServerApplicationContext) applicationContext;
 
-		RequestMappingHandlerMapping requestMappingHandlerMapping =
-			servletWebServerApplicationContext.getBean("requestMappingHandlerMapping", RequestMappingHandlerMapping.class);
+		Map<String, RequestMappingInfoHandlerMapping> requestMappingInfoHandlerMappings =
+			servletWebServerApplicationContext.getBeansOfType(RequestMappingInfoHandlerMapping.class);
 		int localServerPort = servletWebServerApplicationContext.getWebServer().getPort();
 		String baseUrl = "http://localhost:" + localServerPort;
-		return new AuthorizationTestUtil(requestMappingHandlerMapping, AuthorizationTestUtil.createRestClient(baseUrl), baseUrl);
+		return new AuthorizationTestUtil(requestMappingInfoHandlerMappings.values(), AuthorizationTestUtil.createRestClient(baseUrl), baseUrl);
 	}
 }

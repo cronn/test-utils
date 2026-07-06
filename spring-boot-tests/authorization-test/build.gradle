@@ -1,6 +1,7 @@
 dependencies {
     testImplementation platform("org.springframework.boot:spring-boot-dependencies:${rootProject.ext.springBootVersion}")
     testImplementation "org.springframework.boot:spring-boot-starter-web"
+    testImplementation "org.springframework.boot:spring-boot-starter-actuator"
     testImplementation "org.springframework.boot:spring-boot-starter-security"
     testImplementation "org.springframework.boot:spring-boot-starter-oauth2-resource-server"
     testImplementation "org.springframework.boot:spring-boot-starter-test"
