@@ -74,6 +74,8 @@ public class MarkdownTableRenderer implements ResultsRenderer {
 		Set<String> allowed = new LinkedHashSet<>(result.allowedRoles());
 		if (allowed.equals(allCredentialNames)) {
 			return "{ANY_ROLE}";
+		} else if (allowed.isEmpty()) {
+			return "{FORBIDDEN}";
 		} else {
 			return String.join("<br>", allowed);
 		}

@@ -25,7 +25,7 @@
 | GET     | /guest-only         | GUEST            |
 | DELETE  | /items/{id}         | ADMIN            |
 | GET     | /items/{id}         | ADMIN            |
-| GET     | /locked             |                  |
+| GET     | /locked             | {FORBIDDEN}      |
 | GET     | /not-found          | USER             |
 | GET     | /public             | {⚠ PERMIT_ALL ⚠} |
 | GET     | /server-error       | USER             |
