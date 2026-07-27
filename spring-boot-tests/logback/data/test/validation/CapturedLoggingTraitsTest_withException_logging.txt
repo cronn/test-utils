@@ -1,0 +1,2 @@
+[                           sample.logger] [ERROR] Something went wrong
+                  java.lang.IllegalStateException: boom

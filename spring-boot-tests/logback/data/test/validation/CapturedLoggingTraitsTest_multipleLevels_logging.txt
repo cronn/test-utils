@@ -1,0 +1,4 @@
+[                           sample.logger] [DEBUG] a debug message
+[                           sample.logger] [INFO ] an info message
+[                           sample.logger] [WARN ] a warning message
+[                           sample.logger] [ERROR] an error message

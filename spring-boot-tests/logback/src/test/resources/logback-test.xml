@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    An explicit configuration file is required here: spring-boot-starter-test pulls in the
+    spring-boot core jar, which registers RootLogLevelConfigurator via META-INF/services.
+    That configurator pins the root logger to INFO, so without this file the DEBUG events
+    the tests expect to capture are never logged.
+-->
+<configuration>
+
+    <appender name="Console" class="ch.qos.logback.core.ConsoleAppender">
+        <layout class="ch.qos.logback.classic.PatternLayout">
+            <Pattern>%date{HH:mm:ss.SSS} %highlight(%-5level) [%blue(%t)] %yellow(%c{40}:%L) - %msg%n%throwable</Pattern>
+        </layout>
+    </appender>
+
+    <root level="DEBUG">
+        <appender-ref ref="Console"/>
+    </root>
+
+</configuration>
