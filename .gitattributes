@@ -1,5 +1,30 @@
 #
 # https://help.github.com/articles/dealing-with-line-endings/
 #
+# Normalize all text files to LF in the repository and in the working tree,
+# independent of the local core.autocrlf setting. This matches end_of_line=lf
+# from .editorconfig and keeps the committed validation files stable, since
+# they are written with hardcoded "\n" line separators.
+*               text=auto eol=lf
+
 # These are explicitly windows files and should use crlf
 *.bat           text eol=crlf
+*.cmd           text eol=crlf
+
+# Shell scripts must keep LF, otherwise they fail with "bad interpreter"
+# in Git Bash and WSL on Windows
+*.sh            text eol=lf
+gradlew         text eol=lf
+
+# Binary files must never be normalized
+*.jar           binary
+*.war           binary
+*.zip           binary
+*.gz            binary
+*.p12           binary
+*.jks           binary
+*.png           binary
+*.jpg           binary
+*.gif           binary
+*.ico           binary
+*.pdf           binary
