@@ -30,15 +30,15 @@ allprojects {
 		useJUnitPlatform()
 	}
 
-    tasks.withType(JavaCompile) {
-        options.compilerArgs.addAll(["-Werror", "-Xlint:all"])
-        options.release = 21
-    }
+	tasks.withType(JavaCompile) {
+		options.compilerArgs.addAll(["-Werror", "-Xlint:all"])
+		options.release = 21
+	}
 
-    tasks.withType(Javadoc) {
-        failOnError = true
-        options.addBooleanOption("Xdoclint:all,-missing", true)
-    }
+	tasks.withType(Javadoc) {
+		failOnError = true
+		options.addBooleanOption("Xdoclint:all,-missing", true)
+	}
 }
 
 sourceSets {
@@ -56,27 +56,27 @@ java {
 
 	registerFeature("h2Support") {
 		usingSourceSet(sourceSets.h2Support)
-	    withSourcesJar()
+		withSourcesJar()
 	}
 	registerFeature("postgresSupport") {
 		usingSourceSet(sourceSets.postgresSupport)
-	    withSourcesJar()
+		withSourcesJar()
 	}
 	registerFeature("springSupport") {
 		usingSourceSet(sourceSets.springSupport)
-	    withSourcesJar()
+		withSourcesJar()
 	}
 	registerFeature("hibernateSupport") {
 		usingSourceSet(sourceSets.hibernateSupport)
-	    withSourcesJar()
+		withSourcesJar()
 	}
 	registerFeature("jpaQueryCapturingSupport") {
 		usingSourceSet(sourceSets.jpaQueryCapturingSupport)
-	    withSourcesJar()
+		withSourcesJar()
 	}
 	registerFeature("authorizationTestSupport") {
 		usingSourceSet(sourceSets.authorizationTestSupport)
-	    withSourcesJar()
+		withSourcesJar()
 	}
 }
 
