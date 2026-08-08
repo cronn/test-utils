@@ -48,6 +48,7 @@ sourceSets {
 	springSupport {}
 	jpaQueryCapturingSupport {}
 	authorizationTestSupport {}
+	logbackSupport {}
 }
 
 java {
@@ -76,6 +77,10 @@ java {
 	}
 	registerFeature("authorizationTestSupport") {
 		usingSourceSet(sourceSets.authorizationTestSupport)
+		withSourcesJar()
+	}
+	registerFeature("logbackSupport") {
+		usingSourceSet(sourceSets.logbackSupport)
 		withSourcesJar()
 	}
 }
@@ -131,6 +136,10 @@ dependencies {
 	authorizationTestSupportImplementation "org.springframework:spring-test"
 	authorizationTestSupportImplementation "org.springframework.boot:spring-boot-web-server"
 	authorizationTestSupportApi "org.junit.jupiter:junit-jupiter-api"
+
+	logbackSupportApi "ch.qos.logback:logback-classic:1.5.38"
+	logbackSupportApi "de.cronn:commons-lang:1.6"
+	logbackSupportApi "de.cronn:validation-file-assertions:0.9.0"
 
 	testImplementation "org.assertj:assertj-core"
 	testImplementation "org.mockito:mockito-core"

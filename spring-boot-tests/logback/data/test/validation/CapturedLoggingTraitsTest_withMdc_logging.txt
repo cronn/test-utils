@@ -1,0 +1,2 @@
+[                           sample.logger] [INFO ] {user=alice, requestId=abc-123} handling request
+[                           sample.logger] [WARN ] {user=alice, requestId=abc-123} almost done

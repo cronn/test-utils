@@ -385,6 +385,109 @@ Maven:
 </dependency>
 ```
 
+### 📝 Logback support
+
+`CapturedLoggingTraits` captures the log statements emitted during a test and asserts them against a [validation-file-assertions](https://github.com/cronn/validation-file-assertions) file.
+This makes it easy to lock down exactly what your code logs — the levels, the messages, the MDC context, and any exceptions — and to catch regressions when logging output changes unexpectedly.
+
+`CapturedLoggingTraits` is a mixin interface. Implement it in your test class and wrap the relevant section of your tests in `withCapturedConsoleLogging(...)`. The captured logging events are rendered to a stable, human-readable format and compared with a validation file:
+
+```java
+class OrderServiceTest implements CapturedLoggingTraits {
+
+    private static final Logger log = LoggerFactory.getLogger("sample.logger");
+
+    @Test
+    void logsEachLevel() {
+        withCapturedConsoleLogging(() -> {
+            log.debug("a debug message");
+            log.info("an info message");
+            log.warn("a warning message");
+            log.error("an error message");
+        });
+    }
+}
+```
+
+The example above produces:
+
+```text
+[sample.logger] [DEBUG] a debug message
+[sample.logger] [INFO ] an info message
+[sample.logger] [WARN ] a warning message
+[sample.logger] [ERROR] an error message
+```
+
+Logging events with configured MDC values are automatically rendered into the log lines:
+
+```text
+[sample.logger] [ERROR] Something went wrong
+    java.lang.IllegalStateException: boom
+[sample.logger] [INFO ] {user=alice, requestId=abc-123} handling request
+```
+
+To run assertions against logging events instead of validation file comparisons, you can also use `LogbackCaptor` to access the logging events:
+
+```java
+@Test
+void captureLogsAsList() throws Exception {
+    LogbackCaptor captor = getLogbackCaptor();
+    captor.captureLoggingDuring(() -> {
+        log.info("This is informative");
+        try (MDC.MDCCloseable userId = MDC.putCloseable("user.id", "123")) {
+            log.warn("This is a warning for a user");
+        }
+    });
+
+    // Check that the MDC value is present with an assertion
+    assertThat(captor.getCapturedLoggingEvents())
+        .anyMatch(it -> it.getMDCPropertyMap().containsKey("user.id"));
+}
+```
+
+To avoid bloated validation files with many unrelated logging events, we recommend to configure an `EventFilter` restricted to a specific list of interesting loggers.
+The default list can be configured by overriding the `defaultCapturedLoggingEventFilter()` method from `CapturedLoggingTraits`, as well as on each capture call:
+
+```java
+// only warnings and above
+withCapturedConsoleLogging(() -> { ... }, EventFilter.atLeastWarning());
+
+// only events from a specific logger
+withCapturedConsoleLogging(() -> { ... }, EventFilter.forClass(OrderService.class));
+
+// only events at INFO or higher
+withCapturedConsoleLogging(() -> { ... }, Level.INFO);
+```
+
+When a test captures more than one block, pass a suffix to write each to its own validation file:
+
+```java
+withCapturedConsoleLogging(() -> log.info("first block"), "first");
+withCapturedConsoleLogging(() -> log.info("second block"), "second");
+```
+
+Behavior can be customized by overriding the interface defaults, for example `capturedLoggerName()` (defaults to the root logger), `defaultCapturedLoggingLevel()` (defaults to `DEBUG`), `capturedLoggingRenderingOptions()` (control whether the logger name and level are included and how the logger name is padded), `defaultCapturedLoggingEventFilter()`, or `defaultValidationNormalizerForCapturedLogging()` to normalize non-deterministic parts of the output before comparison. Any exception thrown by the action is propagated after the log has been captured.
+
+Gradle:
+```groovy
+testImplementation("de.cronn:test-utils:{version}") {
+    capabilities {
+        requireCapability("de.cronn:test-utils-logback-support")
+    }
+}
+```
+
+Maven:
+```xml
+<dependency>
+    <groupId>de.cronn</groupId>
+    <artifactId>test-utils</artifactId>
+    <version>{version}</version>
+    <scope>test</scope>
+    <classifier>logback-support</classifier>
+</dependency>
+```
+
 ### 🛡️ Authorization Test Support
 
 AuthorizationTestUtil generates an authorization matrix for a running Spring MVC application as a Markdown table.

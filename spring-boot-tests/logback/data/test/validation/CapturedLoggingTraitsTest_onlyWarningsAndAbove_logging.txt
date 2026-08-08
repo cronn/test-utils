@@ -1,0 +1,2 @@
+[                           sample.logger] [WARN ] this is captured
+[                           sample.logger] [ERROR] this too
