@@ -418,7 +418,7 @@ The example above produces:
 [sample.logger] [ERROR] an error message
 ```
 
-Logging events with configured MCP values are automatically rendered into the log lines:
+Logging events with configured MDC values are automatically rendered into the log lines:
 
 ```text
 [sample.logger] [ERROR] Something went wrong
